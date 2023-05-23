@@ -48,6 +48,8 @@ cp_2 <- rep(0, 303)
 cp_3 <- rep(0, 303)
 cp_4 <- rep(0, 303)
 thalach <- round(runif(303, min = 71, max = 202))
+df_4 <- data.frame("restecg_1" = HD_df_4$restecg_1, "restecg_2" = HD_df_4$restecg_2,
+                     thalach, exang, oldpeak, slope_2, slope_3, cp_2, cp_3, cp_4)
 
 # Expectation Plot
 intval_I_4<-function(betas,regs,deriv=NULL){
@@ -63,11 +65,11 @@ intval_I_4<-function(betas,regs,deriv=NULL){
 
 mittlerer_Ewert_I_4 <- list()
 mittlerer_Ewert_I_4$restecg_0 <- apply(draws_4,1,function(x){sum(intval_I_4(x,
-               dplyr::select(mutate(HD_df_4,restecg_0=1,restecg_1=0,restecg_2=0),-"restecg_0")))/nrow(HD_df_4)})
+               dplyr::select(mutate(df_4,restecg_0=1,restecg_1=0,restecg_2=0),-"restecg_0")))/nrow(df_4)})
 mittlerer_Ewert_I_4$restecg_1 <- apply(draws_4,1,function(x){sum(intval_I_4(x,
-               dplyr::select(mutate(HD_df_4,restecg_0=0,restecg_1=1,restecg_2=0),-"restecg_0")))/nrow(HD_df_4)})
+               dplyr::select(mutate(df_4,restecg_0=0,restecg_1=1,restecg_2=0),-"restecg_0")))/nrow(df_4)})
 mittlerer_Ewert_I_4$restecg_2 <- apply(draws_4,1,function(x){sum(intval_I_4(x,
-               dplyr::select(mutate(HD_df_4,restecg_0=0,restecg_1=0,restecg_2=1),-"restecg_0")))/nrow(HD_df_4)})
+               dplyr::select(mutate(df_4,restecg_0=0,restecg_1=0,restecg_2=1),-"restecg_0")))/nrow(df_4)})
 
 mittlerer_Ewert_I_4_restecg <- ldply(mittlerer_Ewert_I_4, data.frame) %>% mutate(.id=as.factor(.id))
 names(mittlerer_Ewert_I_4_restecg)<-c("Ruhe_EKG","value")
@@ -83,15 +85,14 @@ exp_I_4 <- ggplot(mittlerer_Ewert_I_4_restecg, aes(x = value, y = Ruhe_EKG)) +
   stat_halfeye(alpha=0.75,point_interval = "mean_hdi")+
   scale_x_continuous(labels = scales::percent)+
   xlab(TeX("$g^{\\left[ I\\right]}_{avg}\\,(\\theta,\\cdot)$"))+
-  coord_flip()+theme_bw()+ggtitle("Under assumption (A.I')")
+  coord_flip()+theme_bw()+ggtitle("Under assumption (A.I)")
 
 # generalized marginal Effect Plot
 AI_4 <- list()
-
-AI_4$restecg_1<-apply(draws_4,1,function(x){sum(intval_I_4(x,dplyr::select(mutate(HD_df_4,restecg_0=0,restecg_1=1,restecg_2=0),-"restecg_0"))-
-                                                  intval_I_4(x,dplyr::select(mutate(HD_df_4,restecg_0=1,restecg_1=0,restecg_2=0),-"restecg_0")))/nrow(HD_df_4)})
-AI_4$restecg_2<-apply(draws_4,1,function(x){sum(intval_I_4(x,dplyr::select(mutate(HD_df_4,restecg_0=0,restecg_1=0,restecg_2=1),-"restecg_0"))-
-                                                  intval_I_4(x,dplyr::select(mutate(HD_df_4,restecg_0=1,restecg_1=0,restecg_2=0),-"restecg_0")))/nrow(HD_df_4)})
+AI_4$restecg_1<-apply(draws_4,1,function(x){sum(intval_I_4(x,dplyr::select(mutate(df_4,restecg_0=0,restecg_1=1,restecg_2=0),-"restecg_0"))-
+                                                  intval_I_4(x,dplyr::select(mutate(df_4,restecg_0=1,restecg_1=0,restecg_2=0),-"restecg_0")))/nrow(df_4)})
+AI_4$restecg_2<-apply(draws_4,1,function(x){sum(intval_I_4(x,dplyr::select(mutate(df_4,restecg_0=0,restecg_1=0,restecg_2=1),-"restecg_0"))-
+                                                  intval_I_4(x,dplyr::select(mutate(df_4,restecg_0=1,restecg_1=0,restecg_2=0),-"restecg_0")))/nrow(df_4)})
 AI_4_restecg<-ldply(AI_4, data.frame) %>% mutate(.id=as.factor(.id))
 names(AI_4_restecg)<-c("Ruhe_EKG","value")
 AI_4_restecg<-merge(AI_4_restecg,
