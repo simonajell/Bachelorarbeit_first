@@ -201,7 +201,7 @@ all_A_plot_3 <- ggplot(all_A_3,aes(x = value, fill = Assumption)) +
   scale_shape_manual(values = c(1, 15, 19)) +
   scale_fill_manual(values = c("deepskyblue4", "yellowgreen", "darkorchid1")) +
   scale_color_manual(values = c("deepskyblue4" ,"yellowgreen", "darkorchid1")) +
-  theme(legend.position = "bottom") + xlab(TeX("$\\Delta_s (\\theta)$"))
+  xlab(TeX("$\\Delta_s (\\theta)$"))
 
 # Expectation Plot für alle Assumptions
 all_A_exp_3 <- rbind(dtI_3_exp, dtII_3_exp, dtIII_3_exp)
@@ -214,5 +214,6 @@ pred_plot_all_3 <- ggplot(all_A_exp_3) +
   theme_bw()
 
 
-ggarrange(pred_plot_all_3, all_A_plot_3, nrow = 2)
-
+plot_3 <- ggarrange(pred_plot_all_3, all_A_plot_3, nrow = 2)
+annotate_figure(plot_3, top = text_grob("Effekt von Höchstem Pulsschlag auf die Wsk. eine Herzkrankheit zu haben",
+                                        face = "bold", size = 14))

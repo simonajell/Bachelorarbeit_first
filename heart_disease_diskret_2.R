@@ -226,11 +226,14 @@ all_A_4 <- rbind(AI_4_restecg, AII_4_restecg, AIII_4_restecg)
 all_A_plot_4 <- ggplot(all_A_4,aes(x=value,fill=Assumption))+
   geom_density(alpha=0.3)+theme_minimal()+
   stat_pointinterval(aes(color=Assumption,shape=Assumption),position = position_dodge(width = 3, preserve = "single"),point_interval = "mean_hdi",point_size=4)+
-  easy_remove_y_axis()+facet_grid(Ruhe_EKG~.)+
+  easy_remove_y_axis()+
+  facet_grid(Ruhe_EKG~., labeller = as_labeller(c(restecg_1 = "Abnormal ",
+                                                  restecg_2 = "Hypertrophie")))+
   scale_shape_manual(values=c(1, 15,19))+
   scale_fill_manual(values=c("yellowgreen", "deepskyblue4", "darkorchid1"))+
   scale_color_manual(values=c("yellowgreen", "deepskyblue4", "darkorchid1"))+
-  theme(legend.position = "bottom")+xlab(TeX("$\\Delta_s (\\theta)$"))
+  theme(strip.text.y = element_text(angle = 0)) +
+  xlab(TeX("$\\Delta_s (\\theta)$"))
 
 
 
@@ -244,7 +247,7 @@ pred_plot_all_4 <- ggplot(all_A_exp_4,aes(x=value,fill=Assumption))+
   scale_shape_manual(values=c(1, 15,19))+
   scale_fill_manual(values=c("firebrick2" ,"orange", "steelblue2"))+
   scale_color_manual(values=c("firebrick2" ,"orange", "steelblue2"))+
-  theme(legend.position = "bottom")+
+  theme(strip.text.y = element_text(angle = 0)) +
   xlab(TeX("$g^{\\left[ I\\right]}_{avg}\\,(\\hat{\\theta},\\cdot)$"))
 
 table(HD_df_4$restecg_1)
@@ -253,7 +256,8 @@ table(HD_df_4$restecg_1)
 # Außerdem unterscheidet sich Assumption 1 stark von den anderen Assumptions, was
 # vielleicht daran liegt, dass die selbst gewählten Werte unrealistisch sind.
 
-ggarrange(pred_plot_all_4, all_A_plot_4, nrow = 2)
-
+plot_4 <- ggarrange(pred_plot_all_4, all_A_plot_4, nrow = 2)
+annotate_figure(plot_4, top = text_grob("Effekt von Ruhe-EKG Ergebnis auf die Wsk. eine Herzkrankheit zu haben",
+                                        face = "bold", size = 14))
 
 

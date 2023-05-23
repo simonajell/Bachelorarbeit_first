@@ -47,8 +47,11 @@ slope_3 <- rep(1, 303)
 restecg_1 <- rep(0, 303)
 restecg_2 <- rep(1, 303)
 thalach <- round(runif(303, min = 71, max = 202))
+df_4.2 <- data.frame("cp_1" = HD_df_4$cp_1, "cp_2" = HD_df_4$cp_2,
+                    "cp_3" =  HD_df_4$cp_3, "cp_4" = HD_df_4$cp_4,
+                     restecg_1, restecg_2, thalach, exang, oldpeak, slope_2, slope_3)
 
-# Expectation Plot
+# Expectation Plot auf selbe art und weise wie Assumption 2 nur mit den selbst ausgesuchten Werten
 intval_I_4.2<-function(betas,regs,deriv=NULL){
   betas <- as.numeric(betas)
   eta <-betas[1]+betas[2]*regs$cp_2+betas[3]*regs$cp_3+betas[4]*regs$cp_4+
@@ -62,13 +65,13 @@ intval_I_4.2<-function(betas,regs,deriv=NULL){
 
 mittlerer_Ewert_I_4.2 <- list()
 mittlerer_Ewert_I_4.2$cp_1 <- apply(draws_4.2,1,function(x){sum(intval_I_4.2(x,
-                                                                            dplyr::select(mutate(HD_df_4,cp_1=1,cp_2=0,cp_3=0, cp_4=0),-"cp_1")))/nrow(HD_df_4)})
+                                                                            dplyr::select(mutate(df_4.2,cp_1=1,cp_2=0,cp_3=0, cp_4=0),-"cp_1")))/nrow(df_4.2)})
 mittlerer_Ewert_I_4.2$cp_2 <- apply(draws_4.2,1,function(x){sum(intval_I_4.2(x,
-                                                                            dplyr::select(mutate(HD_df_4,cp_1=0,cp_2=1,cp_3=0, cp_4=0),-"cp_1")))/nrow(HD_df_4)})
+                                                                            dplyr::select(mutate(df_4.2,cp_1=0,cp_2=1,cp_3=0, cp_4=0),-"cp_1")))/nrow(df_4.2)})
 mittlerer_Ewert_I_4.2$cp_3 <- apply(draws_4.2,1,function(x){sum(intval_I_4.2(x,
-                                                                            dplyr::select(mutate(HD_df_4,cp_1=0,cp_2=0,cp_3=1, cp_4=0),-"cp_1")))/nrow(HD_df_4)})
+                                                                            dplyr::select(mutate(df_4.2,cp_1=0,cp_2=0,cp_3=1, cp_4=0),-"cp_1")))/nrow(df_4.2)})
 mittlerer_Ewert_I_4.2$cp_4 <- apply(draws_4.2,1,function(x){sum(intval_I_4.2(x,
-                                                                           dplyr::select(mutate(HD_df_4,cp_1=0,cp_2=0,cp_3=0, cp_4=1),-"cp_1")))/nrow(HD_df_4)})
+                                                                           dplyr::select(mutate(df_4.2,cp_1=0,cp_2=0,cp_3=0, cp_4=1),-"cp_1")))/nrow(df_4.2)})
 
 mittlerer_Ewert_I_4.2_cp <- ldply(mittlerer_Ewert_I_4.2, data.frame) %>% mutate(.id=as.factor(.id))
 names(mittlerer_Ewert_I_4.2_cp)<-c("Brust_Schmerz","value")
@@ -88,12 +91,12 @@ exp_I_4.2 <- ggplot(mittlerer_Ewert_I_4.2_cp, aes(x = value, y = Brust_Schmerz))
 
 # generalized marginal Effect Plot
 AI_4.2 <- list()
-AI_4.2$cp_2<-apply(draws_4.2,1,function(x){sum(intval_I_4.2(x,dplyr::select(mutate(HD_df_4,cp_1=0,cp_2=1,cp_3=0, cp_4=0),-"cp_1"))-
-                                                  intval_I_4.2(x,dplyr::select(mutate(HD_df_4,cp_1=1,cp_2=0,cp_3=0, cp_4=0),-"cp_1")))/nrow(HD_df_4)})
-AI_4.2$cp_3<-apply(draws_4.2,1,function(x){sum(intval_I_4.2(x,dplyr::select(mutate(HD_df_4,cp_1=0,cp_2=0,cp_3=1, cp_4=0),-"cp_1"))-
-                                                  intval_I_4.2(x,dplyr::select(mutate(HD_df_4,cp_1=1,cp_2=0,cp_3=0, cp_4=0),-"cp_1")))/nrow(HD_df_4)})
-AI_4.2$cp_4<-apply(draws_4.2,1,function(x){sum(intval_I_4.2(x,dplyr::select(mutate(HD_df_4,cp_1=0,cp_2=0,cp_3=0, cp_4=1),-"cp_1"))-
-                                                 intval_I_4.2(x,dplyr::select(mutate(HD_df_4,cp_1=1,cp_2=0,cp_3=0, cp_4=0),-"cp_1")))/nrow(HD_df_4)})
+AI_4.2$cp_2<-apply(draws_4.2,1,function(x){sum(intval_I_4.2(x,dplyr::select(mutate(df_4.2,cp_1=0,cp_2=1,cp_3=0, cp_4=0),-"cp_1"))-
+                                                  intval_I_4.2(x,dplyr::select(mutate(df_4.2,cp_1=1,cp_2=0,cp_3=0, cp_4=0),-"cp_1")))/nrow(df_4.2)})
+AI_4.2$cp_3<-apply(draws_4.2,1,function(x){sum(intval_I_4.2(x,dplyr::select(mutate(df_4.2,cp_1=0,cp_2=0,cp_3=1, cp_4=0),-"cp_1"))-
+                                                  intval_I_4.2(x,dplyr::select(mutate(df_4.2,cp_1=1,cp_2=0,cp_3=0, cp_4=0),-"cp_1")))/nrow(df_4.2)})
+AI_4.2$cp_4<-apply(draws_4.2,1,function(x){sum(intval_I_4.2(x,dplyr::select(mutate(df_4.2,cp_1=0,cp_2=0,cp_3=0, cp_4=1),-"cp_1"))-
+                                                 intval_I_4.2(x,dplyr::select(mutate(df_4.2,cp_1=1,cp_2=0,cp_3=0, cp_4=0),-"cp_1")))/nrow(df_4.2)})
 AI_4.2_cp<-ldply(AI_4.2, data.frame) %>% mutate(.id=as.factor(.id))
 names(AI_4.2_cp)<-c("Brust_Schmerz","value")
 AI_4.2_cp<-merge(AI_4.2_cp,
@@ -235,11 +238,14 @@ all_A_4.2 <- rbind(AI_4.2_cp, AII_4.2_cp, AIII_4.2_cp)
 all_A_plot_4.2 <- ggplot(all_A_4.2,aes(x=value,fill=Assumption))+
   geom_density(alpha=0.3)+theme_minimal()+
   stat_pointinterval(aes(color=Assumption,shape=Assumption),position = position_dodge(width = 3, preserve = "single"),point_interval = "mean_hdi",point_size=4)+
-  easy_remove_y_axis()+facet_grid(Brust_Schmerz~.)+
+  easy_remove_y_axis()+facet_grid(Brust_Schmerz~., labeller = as_labeller(c(cp_2 = "Atypischer Angina",
+                                                                          cp_3 = "nicht-anginös",
+                                                                          cp_4 = "Asymptomatische")))+
   scale_shape_manual(values=c(1, 15,19))+
+  theme(strip.text.y = element_text(angle = 0)) +
   scale_fill_manual(values=c("yellowgreen", "deepskyblue4", "darkorchid1"))+
   scale_color_manual(values=c("yellowgreen", "deepskyblue4", "darkorchid1"))+
-  theme(legend.position = "bottom")+xlab(TeX("$\\Delta_s (\\theta)$"))
+  xlab(TeX("$\\Delta_s (\\theta)$"))
 
 
 
@@ -248,26 +254,20 @@ all_A_plot_4.2 <- ggplot(all_A_4.2,aes(x=value,fill=Assumption))+
 all_A_exp_4.2 <- rbind(mittlerer_Ewert_I_4.2_cp, mittlerer_Ewert_II_4.2_cp, mittlerer_Ewert_III_4.2_cp)
 pred_plot_all_4.2 <- ggplot(all_A_exp_4.2,aes(x=value,fill=Assumption))+
   geom_density(alpha=0.3)+theme_minimal()+
-  stat_pointinterval(aes(color=Assumption,shape=Assumption),position = position_dodge(width = 3, preserve = "single"),point_interval = "mean_hdi",point_size=4)+
-  easy_remove_y_axis()+facet_grid(Brust_Schmerz~.)+
+  stat_pointinterval(aes(color=Assumption,shape=Assumption),position = position_dodge(width = 3, preserve = "single"),
+                     point_interval = "mean_hdi",point_size=4)+
+  easy_remove_y_axis()+
+  facet_grid(Brust_Schmerz~., labeller = as_labeller(c(Typical_Angina = "Typischer Angina",
+                                                       Atypical_Angina = "Atypischer Angina",
+                                                       Non_Anginal_Pain = "nicht-anginös",
+                                                       Asymptomatic = "Asymptomatische")))+
   scale_shape_manual(values=c(1, 15,19))+
   scale_fill_manual(values=c("firebrick2" ,"orange", "steelblue2"))+
   scale_color_manual(values=c("firebrick2" ,"orange", "steelblue2"))+
-  theme(legend.position = "bottom")+
+  theme(strip.text.y = element_text(angle = 0)) +
   xlab(TeX("$g^{\\left[ I\\right]}_{avg}\\,(\\hat{\\theta},\\cdot)$"))
 
 
-ggarrange(pred_plot_all_4.2, all_A_plot_4.2, nrow = 2)
-
-
-
-
-
-ggplot(all_A_exp_4.2,aes(x=value,fill=Assumption))+
-  geom_boxplot(alpha=0.7)+theme_minimal()+
-  easy_remove_y_axis()+facet_grid(Brust_Schmerz~.)+
-  scale_shape_manual(values=c(1, 15,19))+
-  scale_fill_manual(values=c("firebrick2" ,"orange", "steelblue2"))+
-  scale_color_manual(values=c("firebrick2" ,"orange", "steelblue2"))+
-  theme(legend.position = "bottom")+
-  xlab(TeX("$g^{\\left[ I\\right]}_{avg}\\,(\\hat{\\theta},\\cdot)$"))
+plot_4.2 <- ggarrange(pred_plot_all_4.2, all_A_plot_4.2, nrow = 2)
+annotate_figure(plot_4.2, top = text_grob("Effekt von Art des Brustschmerzes auf die Wsk. eine Herzkrankheit zu haben",
+                                        face = "bold", size = 14))

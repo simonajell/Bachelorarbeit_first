@@ -156,7 +156,8 @@ all_A_plot_2 <- ggplot(all_A_2,aes(x=value,fill=Assumption))+
   scale_shape_manual(values=c(1, 15,19))+
   scale_fill_manual(values=c("yellowgreen", "deepskyblue4", "darkorchid1"))+
   scale_color_manual(values=c("yellowgreen", "deepskyblue4", "darkorchid1"))+
-  theme(legend.position = "bottom")+xlab(TeX("$\\Delta_s (\\theta)$"))
+  theme(strip.text.y = element_text(angle = 0)) +
+  xlab(TeX("$\\Delta_s (\\theta)$"))
 
 # alle Expectation Plots zusammen
 all_A_exp_2 <- rbind(mittlerer_Ewert_I_2_sex, mittlerer_Ewert_II_2_sex, mittlerer_Ewert_III_2_sex)
@@ -167,9 +168,11 @@ pred_plot_all_2 <- ggplot(all_A_exp_2,aes(x=value,fill=Assumption))+
   scale_shape_manual(values=c(1, 15,19))+
   scale_fill_manual(values=c("firebrick2" ,"orange", "steelblue2"))+
   scale_color_manual(values=c("firebrick2" ,"orange", "steelblue2"))+
-  theme(legend.position = "bottom")+xlab(TeX("$g^{\\left[ I\\right]}_{avg}\\,(\\theta,\\cdot)$"))
+  theme(strip.text.y = element_text(angle = 0)) +
+  xlab(TeX("$g^{\\left[ I\\right]}_{avg}\\,(\\theta,\\cdot)$"))
 
 
-ggarrange(pred_plot_all_2, all_A_plot_2, nrow = 2)
-
+plot_2 <- ggarrange(pred_plot_all_2, all_A_plot_2, nrow = 2)
+annotate_figure(plot_2, top = text_grob("Effekt von Geschlecht auf die Wsk. eine Herzkrankheit zu haben",
+                                        face = "bold", size = 14))
 

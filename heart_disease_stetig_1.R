@@ -159,8 +159,7 @@ all_A_plot <- ggplot(all_A,aes(x = value, fill = Assumption)) +
   stat_pointinterval(aes(color = Assumption, shape = Assumption),position = position_dodge(width = 3, preserve = "single"),point_interval = "mean_hdi",point_size=4)+
   scale_shape_manual(values = c(1, 15, 19)) +
   scale_fill_manual(values = c("deepskyblue4", "yellowgreen", "darkorchid1")) +
-  scale_color_manual(values = c("deepskyblue4" ,"yellowgreen", "darkorchid1")) +
-  theme(legend.position = "bottom") + xlab(TeX("$\\Delta_s (\\theta)$"))
+  scale_color_manual(values = c("deepskyblue4" ,"yellowgreen", "darkorchid1")) + xlab(TeX("$\\Delta_s (\\theta)$"))
 
 # Expectation Plot für alle Assumptions
 all_A_exp <- rbind(dtI_1_exp, dtII_1_exp, dtIII_1_exp)
@@ -173,7 +172,8 @@ pred_plot_all <- ggplot(all_A_exp) +
   theme_bw()
 
 
-ggarrange(pred_plot_all, all_A_plot, nrow = 2)
-
+plot_1 <- ggarrange(pred_plot_all, all_A_plot, nrow = 2)
+annotate_figure(plot_1, top = text_grob("Effekt von Cholesterin auf die Wsk. eine Herzkrankheit zu haben",
+                face = "bold", size = 14))
 
 
