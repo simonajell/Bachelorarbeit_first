@@ -184,3 +184,52 @@ both_cont <- ggplot(both_As,aes(x = value, fill = Assumption)) +
   scale_color_manual(values = c("yellowgreen", "mediumpurple4")) +
   theme(legend.position = "bottom") + xlab(TeX("$\\Delta_s (\\theta)$"))
 
+
+#################################################################################
+# nur zwei Regressoren
+model_2r <- glm(LOS > median(LOS) ~ AGE + GENDER, family = "binomial", data = data)
+summary(model_2r)
+
+# Draws:
+draws_2r <- rmvnorm(1000, model_2r$coefficients, vcov(model_2r))
+
+# Assumption 2 auf AGE
+int_leng_2r <- max(data$AGE) - min(data$AGE)
+AgePredII_2r <- apply(draws_2r, 1, function(x) mean((1/69)*
+                 (inv.logit(x[1] + x[2]*87 +x[3]*df$genderM) -
+                    inv.logit(x[1] + x[2]*18 + x[3]*df$genderM))))
+AgePredII_2r_mean <- mean(AgePredII_2r)
+
+# Assumption 3 auf AGE
+AgePredIII_2r <- apply(draws_2r, 1, function(x) mean(inv.logit.deriv(x[1] +
+                             x[2]*df$age + x[3]*df$genderM, x[2])))
+AgePredIII_2r_mean <- mean(AgePredIII_2r)
+
+# nur zwei Regressoren diskret
+model_2rr <- glm(LOS > median(LOS) ~ GENDER + AGE, family = "binomial", data = data)
+summary(model_2rr)
+
+# Draws:
+draws_2rr <- rmvnorm(1000, model_2rr$coefficients, vcov(model_2rr))
+
+# Assumption 2 auf AGE
+intval_II_2rr<-function(betas,regs,deriv=NULL){
+  betas <- as.numeric(betas)
+  eta <-betas[1]+betas[2]*regs$genderM+betas[3]*regs$age
+  if(is.null(deriv)){return(unlist(inv.logit(eta)))
+  }else{
+    return(unlist(inv.logit.deriv(eta,betas[deriv])))
+  }
+}
+AII_2rr<-apply(draws_2rr,1,function(x){sum(intval_II_2rr(x,mutate(df,genderM=1))-intval_II_2rr(x,mutate(df,genderM=0)))/nrow(df)})
+AII_2rr_mean <- mean(AII_2rr)
+
+# Assumption 3 auf AGE
+AIII_2rr <- list()
+AIII_2rr<-apply(draws_2rr,1,function(x){(sum(intval_II_2rr(x,df[which(df$genderM==1),]))/length(which(df$genderM==1)))-
+    (sum(intval_II_2rr(x,df[which(df$genderM==0),]))/length(which(df$genderM==0)))})
+AIII_2rr_mean <- mean(AIII_2rr)
+
+
+
+

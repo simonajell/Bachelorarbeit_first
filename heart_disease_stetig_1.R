@@ -32,8 +32,8 @@ summary(model1)
 draws1 <- rmvnorm(1000, model1$coefficients, vcov(model1))
 
 ################
-#Assumption 1 auf Cholesterin für 30 bis 50 Jährige Männer mit dem zufälligem Ruhe Blutdruck und Blutzucker
-age_I_1 <- round(runif(303, min = 30, max = 50))
+#Assumption 1 auf Cholesterin für Männer mit dem zufälligem Ruhe Blutdruck und Blutzucker
+age_I_1 <- round(runif(303, min = 29, max = 77))
 trestbps_I_1 <- round(runif(303, min = 94, max = 200))
 fbs_I_1 <- round(runif(303, min = 0, max = 1))
 AgePredI_1 <- apply(draws1, 1, function(x) mean(inv.logit.deriv(x[1] +
@@ -54,7 +54,7 @@ for(i in seq_along(chol)) {
 dtI_1_exp <- data.frame(x = chol, mean = apply(AgePredI_1_exp, 1, mean),
                         ymin=predict(loess(apply(AgePredI_1_exp,1,function(x)HDInterval::hdi(x,credMass = 0.95)[1]) ~ chol),data.frame(chol = chol)),
                         ymax=predict(loess(apply(AgePredI_1_exp,1,function(x)HDInterval::hdi(x,credMass = 0.95)[2]) ~ chol),data.frame(chol = chol)),
-                        Assumption = "Assumption1"
+                        Assumption = "Annahme 1"
 )
 pred_plotI_1 <- ggplot(dtI_1_exp) +
   geom_line(aes(x = x,y = mean), linewidth = 1) +
@@ -96,7 +96,7 @@ for(i in seq_along(chol)) {
 dtII_1_exp <- data.frame(x = chol, mean = apply(AgePredII_1_exp, 1, mean),
                          ymin=predict(loess(apply(AgePredII_1_exp,1,function(x)HDInterval::hdi(x,credMass = 0.95)[1]) ~ chol),data.frame(chol = chol)),
                          ymax=predict(loess(apply(AgePredII_1_exp,1,function(x)HDInterval::hdi(x,credMass = 0.95)[2]) ~ chol),data.frame(chol = chol)),
-                         Assumption = "Assumption2"
+                         Assumption = "Annahme 2"
 )
 pred_plotII_1 <- ggplot(dtII_1_exp) +
   geom_line(aes(x = x,y = mean), linewidth = 1) +
@@ -133,7 +133,7 @@ for(i in seq_along(chol)) {
 dtIII_1_exp <- data.frame(x = chol, mean = apply(AgePredIII_1_exp, 1, mean),
                           ymin=predict(loess(apply(AgePredIII_1_exp,1,function(x)HDInterval::hdi(x,credMass = 0.95)[1])~chol),data.frame(chol=chol)),
                           ymax=predict(loess(apply(AgePredIII_1_exp,1,function(x)HDInterval::hdi(x,credMass = 0.95)[2])~chol),data.frame(chol=chol)),
-                          Assumption = "Assumption3"
+                          Assumption = "Annahme 3"
 )
 pred_plotIII_1 <- ggplot(dtIII_1_exp) +
   geom_line(aes(x = x,y = mean), linewidth = 1) +
@@ -143,37 +143,38 @@ pred_plotIII_1 <- ggplot(dtIII_1_exp) +
 
 ############
 # durchschnittliche Steigungen vergleichen
-AI_1 <- data.frame(AgePredI_1, Assumption = "Assumption 1", mean = mean(AgePredI_1))
+AI_1 <- data.frame(AgePredI_1, Assumption = "Annahme 1", mean = mean(AgePredI_1))
 names(AI_1)<-c("value", "Assumption", "mean")
 
-AII_1 <- data.frame(AgePredII_1, Assumption = "Assumption 2", mean = mean(AgePredII_1))
+AII_1 <- data.frame(AgePredII_1, Assumption = "Annahme 2", mean = mean(AgePredII_1))
 names(AII_1)<-c("value", "Assumption", "mean")
 
-AIII_1 <- data.frame(AgePredIII_1, Assumption = "Assumption 3", mean = mean(AgePredIII_1))
+AIII_1 <- data.frame(AgePredIII_1, Assumption = "Annahme 3", mean = mean(AgePredIII_1))
 names(AIII_1)<-c("value", "Assumption", "mean")
 
 all_A <- rbind(AI_1, AII_1, AIII_1)
 
 all_A_plot <- ggplot(all_A,aes(x = value, fill = Assumption)) +
-  geom_density(alpha=0.3) + theme_minimal() +
+  geom_density(alpha=0.3) +   theme_bw() +
   stat_pointinterval(aes(color = Assumption, shape = Assumption),position = position_dodge(width = 3, preserve = "single"),point_interval = "mean_hdi",point_size=4)+
   scale_shape_manual(values = c(1, 15, 19)) +
   scale_fill_manual(values = c("deepskyblue4", "yellowgreen", "darkorchid1")) +
   scale_color_manual(values = c("deepskyblue4" ,"yellowgreen", "darkorchid1")) + xlab(TeX("$\\Delta_s (\\theta)$"))
+ggsave("gme_plot_1.jpg", width = 7, height = 4)
 
 # Expectation Plot für alle Assumptions
 all_A_exp <- rbind(dtI_1_exp, dtII_1_exp, dtIII_1_exp)
 pred_plot_all <- ggplot(all_A_exp) +
   geom_line(aes(x = x,y = mean, color = Assumption), linewidth = 1) +
+  geom_point(aes(x = x,y = mean, color = Assumption), size = 0.7) +
   geom_ribbon(aes(x = x, ymin = ymin, ymax = ymax, fill = Assumption), alpha = 0.15) +
   scale_fill_manual(values = c("firebrick2" ,"orange", "steelblue1")) +
   scale_color_manual(values = c("firebrick2" ,"orange", "steelblue2")) +
   labs(y=TeX("$g^{\\left[ I\\right]}_{avg}\\,(\\hat{\\theta},\\cdot)$"),x="Cholesterin")+
   theme_bw()
-
+ggsave("exp_plot_1.jpg", width = 7, height = 4)
 
 plot_1 <- ggarrange(pred_plot_all, all_A_plot, nrow = 2)
 annotate_figure(plot_1, top = text_grob("Effekt von Cholesterin auf die Wsk. eine Herzkrankheit zu haben",
                 face = "bold", size = 14))
-
-
+ggsave("analysis_1.jpg")
