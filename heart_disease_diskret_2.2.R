@@ -51,7 +51,7 @@ df_4.2 <- data.frame("cp_1" = HD_df_4$cp_1, "cp_2" = HD_df_4$cp_2,
                     "cp_3" =  HD_df_4$cp_3, "cp_4" = HD_df_4$cp_4,
                      restecg_1, restecg_2, thalach, exang, oldpeak, slope_2, slope_3)
 
-# Expectation Plot auf selbe art und weise wie Assumption 2 nur mit den selbst ausgesuchten Werten
+# adjusted predictions auf selbe art und weise wie Assumption 2 nur mit den selbst ausgesuchten Werten
 intval_I_4.2<-function(betas,regs,deriv=NULL){
   betas <- as.numeric(betas)
   eta <-betas[1]+betas[2]*regs$cp_2+betas[3]*regs$cp_3+betas[4]*regs$cp_4+
@@ -247,12 +247,12 @@ all_A_plot_4.2 <- ggplot(all_A_4.2,aes(x=value,fill=Assumption))+
   theme(strip.text.y = element_text(angle = 0)) +
   scale_fill_manual(values=c("yellowgreen", "deepskyblue4", "darkorchid1"))+
   scale_color_manual(values=c("yellowgreen", "deepskyblue4", "darkorchid1"))+
-  xlab(TeX("$\\Delta_s (\\theta)$"))
+  xlab(TeX("Wert des GME"))
 ggsave("gme_plot_4.2.jpg", width = 7, height = 4)
 
 
 
-# alle Expectation Plots zusammen
+# alle adjusted predictions zusammen
 all_A_exp_4.2 <- rbind(mittlerer_Ewert_I_4.2_cp, mittlerer_Ewert_II_4.2_cp, mittlerer_Ewert_III_4.2_cp)
 all_A_exp_4.2$Brust_Schmerz <- factor(all_A_exp_4.2$Brust_Schmerz, labels = c("Typischer Brustschmerz; n = 144",
 "Atypischer Brustschmerz; n = 23", "nicht-anginöser Brustschmerz; n = 50", "Asymptomatischer Brustschmerz; n = 86"))
@@ -266,7 +266,7 @@ pred_plot_all_4.2 <- ggplot(all_A_exp_4.2,aes(x=value,fill=Assumption))+
   scale_fill_manual(values=c("firebrick2" ,"orange", "steelblue2"))+
   scale_color_manual(values=c("firebrick2" ,"orange", "steelblue2"))+
   theme(strip.text.y = element_text(angle = 0)) +
-  xlab(TeX("$g^{\\left[ I\\right]}_{avg}\\,(\\hat{\\theta},\\cdot)$"))
+  xlab("Wert der Angepassten Vorhersage")
 ggsave("exp_plot_4.2.jpg", width = 7, height = 4)
 
 plot_4.2 <- ggarrange(pred_plot_all_4.2, all_A_plot_4.2, nrow = 2)

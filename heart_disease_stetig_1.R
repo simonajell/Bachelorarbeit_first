@@ -42,7 +42,7 @@ AgePredI_1 <- apply(draws1, 1, function(x) mean(inv.logit.deriv(x[1] +
                                                                   x[5]* age_I_1 + x[6]*fbs_I_1, x[2])))
 AgePredI_1_mean <- mean(AgePredI_1)
 
-# Expectation Plot
+# adjusted predictions
 AgePredI_1_exp <- matrix(nrow = 439, ncol = 1000)
 chol <- c(min(HeartDisease$chol) : max(HeartDisease$chol))
 for(i in seq_along(chol)) {
@@ -76,7 +76,7 @@ AgePredII_1 <- apply(draws1, 1, function(x) mean((1/438)*(inv.logit(x[1] +
                                                                         x[5]*HeartDisease$age + x[6]*HeartDisease$fbs))))
 AgePredII_1_mean <- mean(AgePredII_1)
 
-# generalized marginal effect - durchschnittliche Steigung
+# generalized marginal effect
 ggplot(data.frame(rating_mean = AgePredII_1), aes(x = rating_mean))+
   geom_density(alpha = 0.25,fill = 4) +
   stat_pointinterval(position = position_dodge(width = 3, preserve = "single"),
@@ -84,7 +84,7 @@ ggplot(data.frame(rating_mean = AgePredII_1), aes(x = rating_mean))+
   xlab(TeX("$g^{\\left[ I\\right]}_{avg}\\,(\\theta,\\cdot)$"))
 
 
-# Expectation Plot
+# adjusted predictions
 AgePredII_1_exp <- matrix(nrow = 439, ncol = 1000)
 chol <- c(min(HeartDisease$chol) : max(HeartDisease$chol))
 for(i in seq_along(chol)) {
@@ -113,7 +113,7 @@ AgePredIII_1 <- apply(draws1, 1, function(x) mean(inv.logit.deriv(x[1] +
 AgePredIII_1_mean <- mean(AgePredIII_1)
 # wenn Alter um 1 steigt, dann verändert sich der mittlere Erwartungswert um ca.0.00553
 
-# generalized marginal effect - durchschnittliche Steigung
+# generalized marginal effect
 ggplot(data.frame(rating_mean = AgePredIII_1), aes(x = rating_mean))+
   geom_density(alpha = 0.25,fill = 4) +
   stat_pointinterval(position = position_dodge(width = 3, preserve = "single"),
@@ -121,7 +121,7 @@ ggplot(data.frame(rating_mean = AgePredIII_1), aes(x = rating_mean))+
   xlab(TeX("$\\Delta_s (\\theta)$"))
 
 
-# Expectation Plot
+# adjusted predictions
 AgePredIII_1_exp <- matrix(nrow = 439, ncol = 1000)
 for(i in seq_along(chol)) {
   df_exp <- HeartDisease[which(HeartDisease$chol == chol[i]), ]
@@ -142,7 +142,7 @@ pred_plotIII_1 <- ggplot(dtIII_1_exp) +
   theme_bw()
 
 ############
-# durchschnittliche Steigungen vergleichen
+# GME vergleichen
 AI_1 <- data.frame(AgePredI_1, Assumption = "Annahme 1", mean = mean(AgePredI_1))
 names(AI_1)<-c("value", "Assumption", "mean")
 
@@ -159,10 +159,10 @@ all_A_plot <- ggplot(all_A,aes(x = value, fill = Assumption)) +
   stat_pointinterval(aes(color = Assumption, shape = Assumption),position = position_dodge(width = 3, preserve = "single"),point_interval = "mean_hdi",point_size=4)+
   scale_shape_manual(values = c(1, 15, 19)) +
   scale_fill_manual(values = c("deepskyblue4", "yellowgreen", "darkorchid1")) +
-  scale_color_manual(values = c("deepskyblue4" ,"yellowgreen", "darkorchid1")) + xlab(TeX("$\\Delta_s (\\theta)$"))
+  scale_color_manual(values = c("deepskyblue4" ,"yellowgreen", "darkorchid1")) + xlab("Wert des GME")
 ggsave("gme_plot_1.jpg", width = 7, height = 4)
 
-# Expectation Plot für alle Assumptions
+# adjusted predictions für alle Assumptions
 all_A_exp <- rbind(dtI_1_exp, dtII_1_exp, dtIII_1_exp)
 pred_plot_all <- ggplot(all_A_exp) +
   geom_line(aes(x = x,y = mean, color = Assumption), linewidth = 1) +
@@ -170,7 +170,7 @@ pred_plot_all <- ggplot(all_A_exp) +
   geom_ribbon(aes(x = x, ymin = ymin, ymax = ymax, fill = Assumption), alpha = 0.15) +
   scale_fill_manual(values = c("firebrick2" ,"orange", "steelblue1")) +
   scale_color_manual(values = c("firebrick2" ,"orange", "steelblue2")) +
-  labs(y=TeX("$g^{\\left[ I\\right]}_{avg}\\,(\\hat{\\theta},\\cdot)$"),x="Cholesterin")+
+  labs(y="Wert der Angepassten Vorhersage",x="Cholesterin")+
   theme_bw()
 ggsave("exp_plot_1.jpg", width = 7, height = 4)
 
