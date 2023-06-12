@@ -247,7 +247,7 @@ all_A_plot_4.2 <- ggplot(all_A_4.2,aes(x=value,fill=Assumption))+
   theme(strip.text.y = element_text(angle = 0)) +
   scale_fill_manual(values=c("yellowgreen", "deepskyblue4", "darkorchid1"))+
   scale_color_manual(values=c("yellowgreen", "deepskyblue4", "darkorchid1"))+
-  xlab(TeX("Wert des GME"))
+  xlab(TeX("$\\Delta_j$"))
 ggsave("gme_plot_4.2.jpg", width = 7, height = 4)
 
 
@@ -266,7 +266,7 @@ pred_plot_all_4.2 <- ggplot(all_A_exp_4.2,aes(x=value,fill=Assumption))+
   scale_fill_manual(values=c("firebrick2" ,"orange", "steelblue2"))+
   scale_color_manual(values=c("firebrick2" ,"orange", "steelblue2"))+
   theme(strip.text.y = element_text(angle = 0)) +
-  xlab("Wert der Angepassten Vorhersage")
+  xlab("Wert der Angepassten Vorhersagen")
 ggsave("exp_plot_4.2.jpg", width = 7, height = 4)
 
 plot_4.2 <- ggarrange(pred_plot_all_4.2, all_A_plot_4.2, nrow = 2)

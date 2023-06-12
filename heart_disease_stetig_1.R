@@ -40,6 +40,16 @@ AgePredI_1 <- apply(draws1, 1, function(x) mean(inv.logit.deriv(x[1] +
                                                                   x[2]*HeartDisease$chol +
                                                                   x[3]* rep(1, 303) + x[4]*trestbps_I_1 +
                                                                   x[5]* age_I_1 + x[6]*fbs_I_1, x[2])))
+
+AgePredI_1 <- apply(draws1, 1, function(x) mean((1/438)*(inv.logit(x[1] +
+                                                                      x[2]*564 +
+                                                                      x[3]*rep(1, 303) + x[4]*trestbps_I_1 +
+                                                                      x[5]*age_I_1 + x[6]*fbs_I_1) -
+                                                            inv.logit(x[1] +
+                                                                        x[2]*126 +
+                                                                        x[3]*rep(1, 303) + x[4]*trestbps_I_1 +
+                                                                        x[5]*age_I_1 + x[6]*fbs_I_1))))
+
 AgePredI_1_mean <- mean(AgePredI_1)
 
 # adjusted predictions
@@ -159,7 +169,7 @@ all_A_plot <- ggplot(all_A,aes(x = value, fill = Assumption)) +
   stat_pointinterval(aes(color = Assumption, shape = Assumption),position = position_dodge(width = 3, preserve = "single"),point_interval = "mean_hdi",point_size=4)+
   scale_shape_manual(values = c(1, 15, 19)) +
   scale_fill_manual(values = c("deepskyblue4", "yellowgreen", "darkorchid1")) +
-  scale_color_manual(values = c("deepskyblue4" ,"yellowgreen", "darkorchid1")) + xlab("Wert des GME")
+  scale_color_manual(values = c("deepskyblue4" ,"yellowgreen", "darkorchid1")) + xlab(TeX("$\\Delta_j$"))
 ggsave("gme_plot_1.jpg", width = 7, height = 4)
 
 # adjusted predictions für alle Assumptions
