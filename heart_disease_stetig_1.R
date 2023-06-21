@@ -33,22 +33,20 @@ draws1 <- rmvnorm(1000, model1$coefficients, vcov(model1))
 
 ################
 #Assumption 1 auf Cholesterin für Männer mit dem zufälligem Ruhe Blutdruck und Blutzucker
-age_I_1 <- round(runif(303, min = 29, max = 77))
-trestbps_I_1 <- round(runif(303, min = 94, max = 200))
-fbs_I_1 <- round(runif(303, min = 0, max = 1))
-AgePredI_1 <- apply(draws1, 1, function(x) mean(inv.logit.deriv(x[1] +
-                                                                  x[2]*HeartDisease$chol +
-                                                                  x[3]* rep(1, 303) + x[4]*trestbps_I_1 +
-                                                                  x[5]* age_I_1 + x[6]*fbs_I_1, x[2])))
-
+# Datensatz mit allen Variablen kombiniert
+age_I_1 <- round(runif(50, min = 29, max = 77))
+trestbps_I_1 <- round(runif(50, min = 94, max = 200))
+fbs_I_1 <- round(runif(20, min = 0, max = 1))
+sex_I_1 <- 1
+dt_I_1_comb <- expand.grid(age = age_I_1, trestbps = trestbps_I_1, fbs = fbs_I_1, sex = sex_I_1)
 AgePredI_1 <- apply(draws1, 1, function(x) mean((1/438)*(inv.logit(x[1] +
                                                                       x[2]*564 +
-                                                                      x[3]*rep(1, 303) + x[4]*trestbps_I_1 +
-                                                                      x[5]*age_I_1 + x[6]*fbs_I_1) -
+                                                                      x[3]*dt_I_1_comb$sex + x[4]*dt_I_1_comb$trestbps +
+                                                                      x[5]*dt_I_1_comb$age + x[6]*dt_I_1_comb$fbs) -
                                                             inv.logit(x[1] +
                                                                         x[2]*126 +
-                                                                        x[3]*rep(1, 303) + x[4]*trestbps_I_1 +
-                                                                        x[5]*age_I_1 + x[6]*fbs_I_1))))
+                                                                        x[3]*dt_I_1_comb$sex + x[4]*dt_I_1_comb$trestbps +
+                                                                        x[5]*dt_I_1_comb$age + x[6]*dt_I_1_comb$fbs))))
 
 AgePredI_1_mean <- mean(AgePredI_1)
 
@@ -56,11 +54,17 @@ AgePredI_1_mean <- mean(AgePredI_1)
 AgePredI_1_exp <- matrix(nrow = 439, ncol = 1000)
 chol <- c(min(HeartDisease$chol) : max(HeartDisease$chol))
 for(i in seq_along(chol)) {
-  AgePredI_1_exp[i, ] <- apply(draws1, 1, function(x) mean(inv.logit(x[1] +
+  AgePredI_1_exp[i, ] <-apply(draws1, 1, function(x) mean(inv.logit(x[1] +
                                                                        x[2]*chol[i] +
-                                                                       x[3]*rep(1, 303) + x[4]*trestbps_I_1 +
-                                                                       x[5]*age_I_1 + x[6]*fbs_I_1)))
+                                                                       x[3]*dt_I_1_comb$sex + x[4]*dt_I_1_comb$trestbps +
+                                                                       x[5]*dt_I_1_comb$age + x[6]*dt_I_1_comb$fbs)))
 }
+
+mean(apply(draws1, 1, function(x) mean(inv.logit(x[1] +
+                                              x[2]*250 +
+                                              x[3]*dt_I_1_comb$sex + x[4]*dt_I_1_comb$trestbps +
+                                              x[5]*dt_I_1_comb$age + x[6]*dt_I_1_comb$fbs))))
+
 dtI_1_exp <- data.frame(x = chol, mean = apply(AgePredI_1_exp, 1, mean),
                         ymin=predict(loess(apply(AgePredI_1_exp,1,function(x)HDInterval::hdi(x,credMass = 0.95)[1]) ~ chol),data.frame(chol = chol)),
                         ymax=predict(loess(apply(AgePredI_1_exp,1,function(x)HDInterval::hdi(x,credMass = 0.95)[2]) ~ chol),data.frame(chol = chol)),
@@ -180,7 +184,7 @@ pred_plot_all <- ggplot(all_A_exp) +
   geom_ribbon(aes(x = x, ymin = ymin, ymax = ymax, fill = Assumption), alpha = 0.15) +
   scale_fill_manual(values = c("firebrick2" ,"orange", "steelblue1")) +
   scale_color_manual(values = c("firebrick2" ,"orange", "steelblue2")) +
-  labs(y="Wert der Angepassten Vorhersage",x="Cholesterin")+
+  labs(y="Wert der Adjusted Predictions",x="Cholesterin")+
   theme_bw()
 ggsave("exp_plot_1.jpg", width = 7, height = 4)
 

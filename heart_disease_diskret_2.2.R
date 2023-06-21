@@ -33,23 +33,23 @@ model4.2 <- glm(target ~ cp + restecg + thalach + exang + oldpeak + slope,
 summary(model4.2)
 draws_4.2 <- rmvnorm(1000, model4.2$coefficients, vcov(model4.2))
 
-HD_df_4 <- dplyr::select(dummy_cols(HeartDisease[,c("thalach","restecg","oldpeak","slope",
-                                                    "cp", "exang", "target")]),
-                         -c(restecg, slope, cp))
+HD_df_4 <- data.frame(HeartDisease[,c("thalach","restecg","oldpeak","slope",
+                                      "cp", "exang", "target")])
 
 ################
 #Assumption 1 auf Brustschmerz für zufälligen oldpeak und slope = downsloping, EKG mit Hypertrophie,
 # zufälligem höchstem Ruhepuls und zufälligem Aktivitätsschmerz
-exang <- round(runif(303, min = 0, max = 1))
-oldpeak <- round(runif(303, min = 0, max = 6.2), digits = 1)
-slope_2 <- rep(0, 303)
-slope_3 <- rep(1, 303)
-restecg_1 <- rep(0, 303)
-restecg_2 <- rep(1, 303)
-thalach <- round(runif(303, min = 71, max = 202))
-df_4.2 <- data.frame("cp_1" = HD_df_4$cp_1, "cp_2" = HD_df_4$cp_2,
-                    "cp_3" =  HD_df_4$cp_3, "cp_4" = HD_df_4$cp_4,
-                     restecg_1, restecg_2, thalach, exang, oldpeak, slope_2, slope_3)
+exang <- round(runif(25, min = 0, max = 1))
+oldpeak <- round(runif(50, min = 0, max = 6.2), digits = 1)
+slope_2 <- 0
+slope_3 <- 1
+restecg_1 <- 0
+restecg_2 <- 1
+thalach <- round(runif(100, min = 71, max = 202))
+dt_I_4.2_comb <- expand.grid(exang, oldpeak, slope_2, slope_3, restecg_1, restecg_2, thalach)
+df_4.2 <- data.frame("cp_1" = rep(0, 125000), "cp_2" = rep(0, 125000),
+                    "cp_3" =  rep(0, 125000), "cp_4" = rep(0, 125000),
+                     dt_I_4.2_comb)
 
 # adjusted predictions auf selbe art und weise wie Assumption 2 nur mit den selbst ausgesuchten Werten
 intval_I_4.2<-function(betas,regs,deriv=NULL){
@@ -235,9 +235,9 @@ GME_III_4.2<-ggplot(AIII_4.2_cp,aes(x=value,fill=Brust_Schmerz))+
 ###########
 # alle generalisierten marginalen Effekte zusammen
 all_A_4.2 <- rbind(AI_4.2_cp, AII_4.2_cp, AIII_4.2_cp)
-all_A_4.2$Brust_Schmerz <- factor(all_A_4.2$Brust_Schmerz, labels = c("Atypischer Brustschmerz; n = 23",
-                                                                      "nicht-anginöser Brustschmerz; n = 50",
-                                                                      "Asymptomatischer Brustschmerz; n = 86"))
+all_A_4.2$Brust_Schmerz <- factor(all_A_4.2$Brust_Schmerz, labels = c("Atypischer Brustschmerz; n = 50",
+                                                                      "nicht-anginöser Brustschmerz; n = 86",
+                                                                      "Asymptomatischer Brustschmerz; n = 144"))
 
 all_A_plot_4.2 <- ggplot(all_A_4.2,aes(x=value,fill=Assumption))+
   geom_density(alpha=0.3)+theme_bw()+
@@ -254,8 +254,8 @@ ggsave("gme_plot_4.2.jpg", width = 7, height = 4)
 
 # alle adjusted predictions zusammen
 all_A_exp_4.2 <- rbind(mittlerer_Ewert_I_4.2_cp, mittlerer_Ewert_II_4.2_cp, mittlerer_Ewert_III_4.2_cp)
-all_A_exp_4.2$Brust_Schmerz <- factor(all_A_exp_4.2$Brust_Schmerz, labels = c("Typischer Brustschmerz; n = 144",
-"Atypischer Brustschmerz; n = 23", "nicht-anginöser Brustschmerz; n = 50", "Asymptomatischer Brustschmerz; n = 86"))
+all_A_exp_4.2$Brust_Schmerz <- factor(all_A_exp_4.2$Brust_Schmerz, labels = c("Typischer Brustschmerz; n = 23",
+"Atypischer Brustschmerz; n = 50", "nicht-anginöser Brustschmerz; n = 86", "Asymptomatischer Brustschmerz; n = 144"))
 pred_plot_all_4.2 <- ggplot(all_A_exp_4.2,aes(x=value,fill=Assumption))+
   geom_density(alpha=0.3)+theme_bw()+
   stat_pointinterval(aes(color=Assumption,shape=Assumption),position = position_dodge(width = 3, preserve = "single"),
@@ -266,7 +266,7 @@ pred_plot_all_4.2 <- ggplot(all_A_exp_4.2,aes(x=value,fill=Assumption))+
   scale_fill_manual(values=c("firebrick2" ,"orange", "steelblue2"))+
   scale_color_manual(values=c("firebrick2" ,"orange", "steelblue2"))+
   theme(strip.text.y = element_text(angle = 0)) +
-  xlab("Wert der Angepassten Vorhersagen")
+  xlab("Wert der Adjusted Predictions")
 ggsave("exp_plot_4.2.jpg", width = 7, height = 4)
 
 plot_4.2 <- ggarrange(pred_plot_all_4.2, all_A_plot_4.2, nrow = 2)
