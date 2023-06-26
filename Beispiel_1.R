@@ -11,34 +11,35 @@ library(plyr)
 library(ggpubr)
 library(mvtnorm)
 
+# Daten einlesen
 data(HeartDisease.target,HeartDisease.cont,HeartDisease.cat)
-
 HeartDisease<-cbind(HeartDisease.cont,HeartDisease.cat,HeartDisease.target)
-
+# Zielvariable binär kodieren
 HeartDisease$target<-ifelse(HeartDisease$num==0,0,1)
+# Brustschmerz Variable zu numerischen Faktor umwandeln
 HeartDisease$cp_cat<-as.factor(HeartDisease$cp)
 levels(HeartDisease$cp_cat)<-list(asymptomatic=4, typical_angina=1,
                                   atypical_angina=2, non_anginal_pain=3)
-
 attach(HeartDisease)
 
 
 # Modell schätzen
 # Variablen, die Angaben zu physischen Eigenschaften und Allgemeinzustand geben, welche in Zusammenhang mit einer Herzkrankheit stehen
-# Einfluss von Cholesterin, Geschlecht, Ruhe Blutdruck, Alter und Nüchterner Blutzucker auf Herzerkrankung
+# Einfluss von Cholesterin, Geschlecht, Ruhe-Blutdruck, Alter und nüchterner Blutzucker auf Herzerkrankung
 model1<-glm(target ~ chol + sex + trestbps +
               age + fbs, family=binomial, data=HeartDisease)
 summary(model1)
 draws1 <- rmvnorm(1000, model1$coefficients, vcov(model1))
 
 ################
-#Assumption 1 auf Cholesterin für Männer mit dem zufälligem Ruhe Blutdruck und Blutzucker
+# Assumption 1 auf Cholesterin für Männer allen Alters mit zufälligem Ruhe Blutdruck und Blutzucker
 # Datensatz mit allen Variablen kombiniert
 age_I_1 <- round(runif(50, min = 29, max = 77))
 trestbps_I_1 <- round(runif(50, min = 94, max = 200))
 fbs_I_1 <- round(runif(20, min = 0, max = 1))
 sex_I_1 <- 1
 dt_I_1_comb <- expand.grid(age = age_I_1, trestbps = trestbps_I_1, fbs = fbs_I_1, sex = sex_I_1)
+# GME schätzen
 AgePredI_1 <- apply(draws1, 1, function(x) mean((1/438)*(inv.logit(x[1] +
                                                                       x[2]*564 +
                                                                       x[3]*dt_I_1_comb$sex + x[4]*dt_I_1_comb$trestbps +
@@ -50,7 +51,7 @@ AgePredI_1 <- apply(draws1, 1, function(x) mean((1/438)*(inv.logit(x[1] +
 
 AgePredI_1_mean <- mean(AgePredI_1)
 
-# adjusted predictions
+# Adjusted Predictions schätzen
 AgePredI_1_exp <- matrix(nrow = 439, ncol = 1000)
 chol <- c(min(HeartDisease$chol) : max(HeartDisease$chol))
 for(i in seq_along(chol)) {
@@ -70,16 +71,12 @@ dtI_1_exp <- data.frame(x = chol, mean = apply(AgePredI_1_exp, 1, mean),
                         ymax=predict(loess(apply(AgePredI_1_exp,1,function(x)HDInterval::hdi(x,credMass = 0.95)[2]) ~ chol),data.frame(chol = chol)),
                         Assumption = "Annahme 1"
 )
-pred_plotI_1 <- ggplot(dtI_1_exp) +
-  geom_line(aes(x = x,y = mean), linewidth = 1) +
-  geom_ribbon(aes(x = x, ymin = ymin, ymax = ymax), alpha = 0.15) +
-  labs(y=TeX("$g^{\\left[ I\\right]}_{avg}\\,(\\hat{\\theta},\\cdot)$"),x="Cholesterin")+
-  theme_bw()
-
 
 #################
 # Assumption 2 auf Cholesterin
+# Intervall von Cholesterin
 int_leng_1 <- max(HeartDisease$chol) - min(HeartDisease$chol)
+# GME schätzen
 AgePredII_1 <- apply(draws1, 1, function(x) mean((1/438)*(inv.logit(x[1] +
                                                                       x[2]*564 +
                                                                       x[3]*HeartDisease$sex + x[4]*HeartDisease$trestbps +
@@ -90,15 +87,7 @@ AgePredII_1 <- apply(draws1, 1, function(x) mean((1/438)*(inv.logit(x[1] +
                                                                         x[5]*HeartDisease$age + x[6]*HeartDisease$fbs))))
 AgePredII_1_mean <- mean(AgePredII_1)
 
-# generalized marginal effect
-ggplot(data.frame(rating_mean = AgePredII_1), aes(x = rating_mean))+
-  geom_density(alpha = 0.25,fill = 4) +
-  stat_pointinterval(position = position_dodge(width = 3, preserve = "single"),
-                     point_interval = "mean_hdi",point_size=4) +
-  xlab(TeX("$g^{\\left[ I\\right]}_{avg}\\,(\\theta,\\cdot)$"))
-
-
-# adjusted predictions
+# Adjusted Predictions
 AgePredII_1_exp <- matrix(nrow = 439, ncol = 1000)
 chol <- c(min(HeartDisease$chol) : max(HeartDisease$chol))
 for(i in seq_along(chol)) {
@@ -112,30 +101,17 @@ dtII_1_exp <- data.frame(x = chol, mean = apply(AgePredII_1_exp, 1, mean),
                          ymax=predict(loess(apply(AgePredII_1_exp,1,function(x)HDInterval::hdi(x,credMass = 0.95)[2]) ~ chol),data.frame(chol = chol)),
                          Assumption = "Annahme 2"
 )
-pred_plotII_1 <- ggplot(dtII_1_exp) +
-  geom_line(aes(x = x,y = mean), linewidth = 1) +
-  geom_ribbon(aes(x = x, ymin = ymin, ymax = ymax), alpha = 0.15) +
-  labs(y=TeX("$g^{\\left[ I\\right]}_{avg}\\,(\\hat{\\theta},\\cdot)$"),x="Cholesterin")+
-  theme_bw()
 
 ##########
 # Assumption 3 auf Cholesterin
+# GME schätzen
 AgePredIII_1 <- apply(draws1, 1, function(x) mean(inv.logit.deriv(x[1] +
                                                                     x[2]*HeartDisease$chol +
                                                                     x[3]*HeartDisease$sex + x[4]*HeartDisease$trestbps +
                                                                     x[5]*HeartDisease$age + x[6]*HeartDisease$fbs, x[2])))
 AgePredIII_1_mean <- mean(AgePredIII_1)
-# wenn Alter um 1 steigt, dann verändert sich der mittlere Erwartungswert um ca.0.00553
 
-# generalized marginal effect
-ggplot(data.frame(rating_mean = AgePredIII_1), aes(x = rating_mean))+
-  geom_density(alpha = 0.25,fill = 4) +
-  stat_pointinterval(position = position_dodge(width = 3, preserve = "single"),
-                     point_interval = "mean_hdi",point_size=4) +
-  xlab(TeX("$\\Delta_s (\\theta)$"))
-
-
-# adjusted predictions
+# Adjusted Predictions schätzen
 AgePredIII_1_exp <- matrix(nrow = 439, ncol = 1000)
 for(i in seq_along(chol)) {
   df_exp <- HeartDisease[which(HeartDisease$chol == chol[i]), ]
@@ -149,14 +125,9 @@ dtIII_1_exp <- data.frame(x = chol, mean = apply(AgePredIII_1_exp, 1, mean),
                           ymax=predict(loess(apply(AgePredIII_1_exp,1,function(x)HDInterval::hdi(x,credMass = 0.95)[2])~chol),data.frame(chol=chol)),
                           Assumption = "Annahme 3"
 )
-pred_plotIII_1 <- ggplot(dtIII_1_exp) +
-  geom_line(aes(x = x,y = mean), linewidth = 1) +
-  geom_ribbon(aes(x = x, ymin = ymin, ymax = ymax), alpha = 0.15) +
-  labs(y=TeX("$g^{\\left[ I\\right]}_{avg}\\,(\\hat{\\theta},\\cdot)$"),x="Cholesterin")+
-  theme_bw()
 
 ############
-# GME vergleichen
+# GMEs vergleichen
 AI_1 <- data.frame(AgePredI_1, Assumption = "Annahme 1", mean = mean(AgePredI_1))
 names(AI_1)<-c("value", "Assumption", "mean")
 
@@ -176,7 +147,7 @@ all_A_plot <- ggplot(all_A,aes(x = value, fill = Assumption)) +
   scale_color_manual(values = c("deepskyblue4" ,"yellowgreen", "darkorchid1")) + xlab(TeX("$\\Delta_j$"))
 ggsave("gme_plot_1.jpg", width = 7, height = 4)
 
-# adjusted predictions für alle Assumptions
+# Adjusted Predictions unter allen Assumptions vergleichen
 all_A_exp <- rbind(dtI_1_exp, dtII_1_exp, dtIII_1_exp)
 pred_plot_all <- ggplot(all_A_exp) +
   geom_line(aes(x = x,y = mean, color = Assumption), linewidth = 1) +
@@ -188,7 +159,4 @@ pred_plot_all <- ggplot(all_A_exp) +
   theme_bw()
 ggsave("exp_plot_1.jpg", width = 7, height = 4)
 
-plot_1 <- ggarrange(pred_plot_all, all_A_plot, nrow = 2)
-annotate_figure(plot_1, top = text_grob("Effekt von Cholesterin auf die Wsk. eine Herzkrankheit zu haben",
-                face = "bold", size = 14))
-ggsave("analysis_1.jpg")
+
