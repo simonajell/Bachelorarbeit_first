@@ -11,28 +11,31 @@ library(plyr)
 library(ggpubr)
 library(mvtnorm)
 
+# Daten einlesen
 data(HeartDisease.target,HeartDisease.cont,HeartDisease.cat)
-
 HeartDisease<-cbind(HeartDisease.cont,HeartDisease.cat,HeartDisease.target)
-
+# Zielvariable binär kodieren
 HeartDisease$target<-ifelse(HeartDisease$num==0,0,1)
-HeartDisease$cp_cat<-as.factor(HeartDisease$cp)
-HeartDisease$restecg<-as.factor(HeartDisease$restecg)
-HeartDisease$slope<-as.factor(HeartDisease$slope)
+# Brustschmerz Variable zu numerischen Faktor umwandeln
 HeartDisease$cp<-as.factor(HeartDisease$cp)
+HeartDisease$cp_cat<-as.factor(HeartDisease$cp)
 levels(HeartDisease$cp_cat)<-list(asymptomatic=4, typical_angina=1,
                                   atypical_angina=2, non_anginal_pain=3)
+# Ruhe-EKG, ST-Steigung und  zu Faktor umwandeln
+HeartDisease$restecg<-as.factor(HeartDisease$restecg)
+HeartDisease$slope<-as.factor(HeartDisease$slope)
+
 
 attach(HeartDisease)
 
 # Variablen aus anderen Kategorien: Elektrokardiographie bezogene Ergebnisse und Symptome
 # Einfluss von höchstem Puls, Ruhe-EKG, ST-Senkung, Steigung des ST Abschnitts,
 # Art des Brust Schmerzes und Brustschmerz durch Anstrengung auf Herzerkrankung
+# Modell schätzen
 model4.2 <- glm(target ~ cp + restecg + thalach + exang + oldpeak + slope,
                 family=binomial, data = HeartDisease)
 summary(model4.2)
 draws_4.2 <- rmvnorm(1000, model4.2$coefficients, vcov(model4.2))
-
 HD_df_4 <- data.frame(HeartDisease[,c("thalach","restecg","oldpeak","slope",
                                       "cp", "exang", "target")])
 
@@ -51,7 +54,7 @@ df_4.2 <- data.frame("cp_1" = rep(0, 125000), "cp_2" = rep(0, 125000),
                     "cp_3" =  rep(0, 125000), "cp_4" = rep(0, 125000),
                      dt_I_4.2_comb)
 
-# adjusted predictions auf selbe art und weise wie Assumption 2 nur mit den selbst ausgesuchten Werten
+# Adjusted Predictions schätzen
 intval_I_4.2<-function(betas,regs,deriv=NULL){
   betas <- as.numeric(betas)
   eta <-betas[1]+betas[2]*regs$cp_2+betas[3]*regs$cp_3+betas[4]*regs$cp_4+
@@ -83,13 +86,7 @@ mittlerer_Ewert_I_4.2_cp<-merge(mittlerer_Ewert_I_4.2_cp,
 levels(mittlerer_Ewert_I_4.2_cp$Brust_Schmerz)<- list(Typical_Angina  = "cp_1", Atypical_Angina  = "cp_2", Non_Anginal_Pain  = "cp_3", Asymptomatic = "cp_4")
 mittlerer_Ewert_I_4.2_cp <- data.frame(mittlerer_Ewert_I_4.2_cp, Assumption = "Annahme 1")
 
-exp_I_4.2 <- ggplot(mittlerer_Ewert_I_4.2_cp, aes(x = value, y = Brust_Schmerz)) +
-  stat_halfeye(alpha=0.75,point_interval = "mean_hdi")+
-  scale_x_continuous(labels = scales::percent)+
-  xlab(TeX("$g^{\\left[ I\\right]}_{avg}\\,(\\theta,\\cdot)$"))+
-  coord_flip()+theme_bw()+ggtitle("Under assumption (A.I)")
-
-# generalized marginal Effect Plot
+# GME schätzen
 AI_4.2 <- list()
 AI_4.2$cp_2<-apply(draws_4.2,1,function(x){sum(intval_I_4.2(x,dplyr::select(mutate(df_4.2,cp_1=0,cp_2=1,cp_3=0, cp_4=0),-"cp_1"))-
                                                   intval_I_4.2(x,dplyr::select(mutate(df_4.2,cp_1=1,cp_2=0,cp_3=0, cp_4=0),-"cp_1")))/nrow(df_4.2)})
@@ -105,17 +102,10 @@ AI_4.2_cp<-merge(AI_4.2_cp,
                       dplyr::summarize_at("value",mean) %>% dplyr::rename(mean=value),
                     by="Brust_Schmerz")
 AI_4.2_cp <- data.frame(AI_4.2_cp, Assumption = "Annahme 1")
-GME_I_4.2<-ggplot(AI_4.2_cp,aes(x=value,fill=Brust_Schmerz))+
-  geom_density(alpha=0.3)+theme_minimal()+
-  stat_pointinterval(aes(color=Brust_Schmerz,shape=Brust_Schmerz),
-                     position = position_dodge(width = 3, preserve = "single"),point_interval = "mean_hdi",point_size=4)+
-  easy_remove_y_axis()+
-  scale_shape_manual(values=c(1,15,19))+
-  scale_fill_manual(values=c("gold2","green4","navyblue"))+scale_color_manual(values=c("gold2","green4","navyblue"))+
-  theme(legend.position = "bottom")+xlab(TeX("$\\Delta_s (\\theta)$"))
 
 #########################
 # Assumption 2
+# Adjusted Predictions schätzen
 intval_II_4.2<-function(betas,regs,deriv=NULL){
   betas <- as.numeric(betas)
   eta <- betas[1]+betas[2]*regs$cp_2+betas[3]*regs$cp_3+betas[4]*regs$cp_4+
@@ -146,13 +136,7 @@ mittlerer_Ewert_II_4.2_cp<-merge(mittlerer_Ewert_II_4.2_cp,
 levels(mittlerer_Ewert_II_4.2_cp$Brust_Schmerz)<- list(Typical_Angina  = "cp_1", Atypical_Angina  = "cp_2", Non_Anginal_Pain  = "cp_3", Asymptomatic = "cp_4")
 mittlerer_Ewert_II_4.2_cp <- data.frame(mittlerer_Ewert_II_4.2_cp, Assumption = "Annahme 2")
 
-exp_II_4.2 <- ggplot(mittlerer_Ewert_II_4.2_cp, aes(x = value, y = Brust_Schmerz)) +
-  stat_halfeye(alpha=0.75,point_interval = "mean_hdi")+
-  scale_x_continuous(labels = scales::percent)+
-  xlab(TeX("$g^{\\left[ I\\right]}_{avg}\\,(\\theta,\\cdot)$"))+
-  coord_flip()+theme_bw()+ggtitle("Under assumption (A.II)")
-
-# generalized marginal Effect Plot
+# GME schätzen
 AII_4.2 <- list()
 AII_4.2$cp_2<-apply(draws_4.2,1,function(x){sum(intval_II_4.2(x,dplyr::select(mutate(HD_df_4,cp_1=0,cp_2=1,cp_3=0, cp_4=0),-"cp_1"))-
                                                    intval_II_4.2(x,dplyr::select(mutate(HD_df_4,cp_1=1,cp_2=0,cp_3=0, cp_4=0),-"cp_1")))/nrow(HD_df_4)})
@@ -168,23 +152,15 @@ AII_4.2_cp<-merge(AII_4.2_cp,
                        dplyr::summarize_at("value",mean) %>% dplyr::rename(mean=value),
                      by="Brust_Schmerz")
 AII_4.2_cp <- data.frame(AII_4.2_cp, Assumption = "Annahme 2")
-GME_II_4.2 <- ggplot(AII_4.2_cp,aes(x=value,fill=Brust_Schmerz))+
-  geom_density(alpha=0.3)+theme_minimal()+
-  stat_pointinterval(aes(color=Brust_Schmerz,shape=Brust_Schmerz),
-                     position = position_dodge(width = 3, preserve = "single"),point_interval = "mean_hdi",point_size=4)+
-  easy_remove_y_axis()+
-  scale_shape_manual(values=c(1, 15,19))+
-  scale_fill_manual(values=c("gold2","green4","navyblue"))+scale_color_manual(values=c("gold2","green4","navyblue"))+
-  theme(legend.position = "bottom")+xlab(TeX("$\\Delta_s (\\theta)$"))
 
 #######################
 # Assumption 3
+# Adjusted Predictions schätzen
 mittlerer_Ewert_III_4.2 <- list()
 mittlerer_Ewert_III_4.2$cp_1<-apply(draws_4.2,1,function(x){sum(intval_II_4.2(x,dplyr::select(HD_df_4[which(HD_df_4$cp_1==1),],-"cp_1")))/length(which(HD_df_4$cp_1==1))})
 mittlerer_Ewert_III_4.2$cp_2<-apply(draws_4.2,1,function(x){sum(intval_II_4.2(x,dplyr::select(HD_df_4[which(HD_df_4$cp_2==1),],-"cp_1")))/length(which(HD_df_4$cp_2==1))})
 mittlerer_Ewert_III_4.2$cp_3<-apply(draws_4.2,1,function(x){sum(intval_II_4.2(x,dplyr::select(HD_df_4[which(HD_df_4$cp_3==1),],-"cp_1")))/length(which(HD_df_4$cp_3==1))})
 mittlerer_Ewert_III_4.2$cp_4<-apply(draws_4.2,1,function(x){sum(intval_II_4.2(x,dplyr::select(HD_df_4[which(HD_df_4$cp_4==1),],-"cp_1")))/length(which(HD_df_4$cp_4==1))})
-
 
 mittlerer_Ewert_III_4.2_cp <- ldply(mittlerer_Ewert_III_4.2, data.frame) %>% mutate(.id=as.factor(.id))
 names(mittlerer_Ewert_III_4.2_cp)<-c("Brust_Schmerz","value")
@@ -196,14 +172,7 @@ mittlerer_Ewert_III_4.2_cp<-merge(mittlerer_Ewert_III_4.2_cp,
 levels(mittlerer_Ewert_III_4.2_cp$Brust_Schmerz)<- list(Typical_Angina  = "cp_1", Atypical_Angina  = "cp_2", Non_Anginal_Pain  = "cp_3", Asymptomatic = "cp_4")
 mittlerer_Ewert_III_4.2_cp <- data.frame(mittlerer_Ewert_III_4.2_cp, Assumption = "Annahme 3")
 
-exp_III_4.2 <- ggplot(mittlerer_Ewert_III_4.2_cp, aes(x = value, y = Brust_Schmerz)) +
-  stat_halfeye(alpha=0.75,point_interval = "mean_hdi")+
-  scale_x_continuous(labels = scales::percent)+
-  xlab(TeX("$g^{\\left[ I\\right]}_{avg}\\,(\\theta,\\cdot)$"))+
-  coord_flip()+theme_bw()+ggtitle("Under assumption (A.III)")
-
-
-# generalized marginal Effect Plot
+# GME schätzen
 AIII_4.2 <- list()
 AIII_4.2$cp_2<-apply(draws_4.2,1,function(x){(sum(intval_II_4.2(x,dplyr::select(HD_df_4[which(HD_df_4$cp_2==1),],-"cp_1")))/length(which(HD_df_4$cp_2==1)))-
     (sum(intval_II_4.2(x,dplyr::select(HD_df_4[which(HD_df_4$cp_1==1),],-"cp_1")))/length(which(HD_df_4$cp_1==1)))})
@@ -221,19 +190,8 @@ AIII_4.2_cp<-merge(AIII_4.2_cp,
                       by="Brust_Schmerz")
 AIII_4.2_cp <- data.frame(AIII_4.2_cp, Assumption = "Annahme 3")
 
-GME_III_4.2<-ggplot(AIII_4.2_cp,aes(x=value,fill=Brust_Schmerz))+
-  geom_density(alpha=0.3)+theme_minimal()+
-  stat_pointinterval(aes(color=Brust_Schmerz,shape=Brust_Schmerz),
-                     position = position_dodge(width = 3, preserve = "single"),point_interval = "mean_hdi",point_size=4)+
-  easy_remove_y_axis()+
-  scale_shape_manual(values=c(1, 15,19))+
-  scale_fill_manual(values=c("gold2","green4","navyblue"))+
-  scale_color_manual(values=c("gold2","green4","navyblue"))+
-  theme(legend.position = "bottom")+xlab(TeX("$\\Delta_s (\\theta)$"))
-
-
 ###########
-# alle generalisierten marginalen Effekte zusammen
+# alle GMEs vergleichen
 all_A_4.2 <- rbind(AI_4.2_cp, AII_4.2_cp, AIII_4.2_cp)
 all_A_4.2$Brust_Schmerz <- factor(all_A_4.2$Brust_Schmerz, labels = c("Atypischer Brustschmerz; n = 50",
                                                                       "nicht-anginöser Brustschmerz; n = 86",
@@ -250,9 +208,7 @@ all_A_plot_4.2 <- ggplot(all_A_4.2,aes(x=value,fill=Assumption))+
   xlab(TeX("$\\Delta_j$"))
 ggsave("gme_plot_4.2.jpg", width = 7, height = 4)
 
-
-
-# alle adjusted predictions zusammen
+# alle Adjusted Predictions vergleichen
 all_A_exp_4.2 <- rbind(mittlerer_Ewert_I_4.2_cp, mittlerer_Ewert_II_4.2_cp, mittlerer_Ewert_III_4.2_cp)
 all_A_exp_4.2$Brust_Schmerz <- factor(all_A_exp_4.2$Brust_Schmerz, labels = c("Typischer Brustschmerz; n = 23",
 "Atypischer Brustschmerz; n = 50", "nicht-anginöser Brustschmerz; n = 86", "Asymptomatischer Brustschmerz; n = 144"))
@@ -268,7 +224,3 @@ pred_plot_all_4.2 <- ggplot(all_A_exp_4.2,aes(x=value,fill=Assumption))+
   theme(strip.text.y = element_text(angle = 0)) +
   xlab("Wert der Adjusted Predictions")
 ggsave("exp_plot_4.2.jpg", width = 7, height = 4)
-
-plot_4.2 <- ggarrange(pred_plot_all_4.2, all_A_plot_4.2, nrow = 2)
-annotate_figure(plot_4.2, top = text_grob("Effekt von Art des Brustschmerzes auf die Wsk. eine Herzkrankheit zu haben",
-                                        face = "bold", size = 14))
