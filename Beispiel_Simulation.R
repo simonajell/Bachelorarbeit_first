@@ -5,6 +5,7 @@ library(mvtnorm)
 library(ggplot2)
 library(tidybayes)
 library(latex2exp)
+library(ggpubr)
 
 # Analyse basiert auf der Studie von:
   # Body size and weight change over adulthood and risk of breast cancer by menopausal
@@ -39,10 +40,12 @@ GME_Sim_smlr <- function(beta1, beta2, beta3, beta4, beta5, split_value) {
   sim_list <- list()
   for(i in seq_along(1:100)) {
     # Regressoren simulieren
-    X <- data.frame(Height = round(rnorm(1000, 162.5, 100)),
-                    BMI = round(rnorm(1000, 27, 28), 2),
-                    BMI_EA = round(rnorm(1000, 21.5, 12), 2),
-                    Weight_Gain = round(rnorm(1000, 15, 90), 2) )
+    Height = round(rnorm(1000, 162.5, 100))
+    BMI = round(rnorm(1000, 27, 28), 2)
+    BMI_EA = round(rnorm(1000, 21.5, 12), 2)
+    BMI_EA = round(rnorm(1000, 21.5, 12), 2)
+    Weight_Gain = (BMI - BMI_EA) * ((Height * 0.01)^2)
+    X <- data.frame(Height, BMI, BMI_EA, Weight_Gain)
     # wahre Betas festlegen
     betatrue<-c(beta1, beta2, beta3, beta4, beta5)
     # Zielvariable schätzen
@@ -69,19 +72,19 @@ GME_Sim_smlr <- function(beta1, beta2, beta3, beta4, beta5, split_value) {
   # einen BMI kleiner 21 hatten.
   # Die Gewichtszunahme ist zufällig.
   # kleinerer Datensatz, da der kombinierte Datensatz zu groß ist.
-  Height_I <- round(runif(50, 139, split_value))
-  BMI_I <- round(runif(20, 25, 35), 2)
-  BMI_EA_I = round(rnorm(20, 19, 21), 2)
-  Weight_Gain_I = round(rnorm(40, -15, 51), 2)
+  Height_I <- seq(min(data_S_1$Height), max(data_S_1$Height), by = 1)
+  BMI_I <- round(runif(10, 20, 25), 2)
+  BMI_EA_I = round(rnorm(10, 19, 21), 2)
+  Weight_Gain_I = round(rnorm(30, -15, 51), 2)
   data_I_S <- expand.grid(Height = Height_I, BMI = BMI_I, BMI_EA = BMI_EA_I, Weight_Gain = Weight_Gain_I)
   # GME
   Height_I_exp <- seq(min(Height_I), max(Height_I), by = 1)
-  GME_I_S <<- apply(drawsS1, 1, function(x) mean((1/length(Height_I))*(inv.logit(x[1] +
-                                                                       x[2]*max(Height_I) +
+  GME_I_S <<- apply(drawsS1, 1, function(x) mean((1/length(Height_I_exp))*(inv.logit(x[1] +
+                                                                       x[2]*max(Height_I_exp) +
                                                                        x[3]*data_I_S$BMI + x[4]*data_I_S$BMI_EA +
                                                                        x[5]*data_I_S$Weight_Gain) -
                                                              inv.logit(x[1] +
-                                                                         x[2]*min(Height_I) +
+                                                                         x[2]*min(Height_I_exp) +
                                                                          x[3]*data_I_S$BMI + x[4]*data_I_S$BMI_EA +
                                                                          x[5]*data_I_S$Weight_Gain))))
   # Annahme 2
@@ -118,12 +121,12 @@ GME_Sim_smlr <- function(beta1, beta2, beta3, beta4, beta5, split_value) {
     scale_fill_manual(values = c("deepskyblue4", "yellowgreen", "darkorchid1")) +
     scale_color_manual(values = c("deepskyblue4" ,"yellowgreen", "darkorchid1")) +
     xlab(TeX("$\\Delta_j$")) +
-    xlim(0, 0.045)
+    xlim(-0.005, 0.015)
   ggsave("exp_plot_S1.jpg", width = 7, height = 4)
   return(all_A_S_plot)
 }
-GME_Sim_smlr(-3, 0.05, -0.1, -0.15, 0.015, 165)
-
+set.seed(12226699)
+GME_Sim_smlr(-9.5, 0.008, 0.3, -0.3, 0.3, 165)
 
 ################################################################################
 # GME berechnen auf dem Datensatz und Modell für Height > split_value
@@ -132,10 +135,12 @@ GME_Sim_lrgr <- function(beta1, beta2, beta3, beta4, beta5, split_value) {
   sim_list <- list()
   for(i in seq_along(1:100)) {
     # Regressoren simulieren
-    X <- data.frame(Height = round(rnorm(1000, 162.5, 100)),
-                    BMI = round(rnorm(1000, 27, 28), 2),
-                    BMI_EA = round(rnorm(1000, 21.5, 12), 2),
-                    Weight_Gain = round(rnorm(1000, 15, 90), 2) )
+    Height = round(rnorm(1000, 162.5, 100))
+    BMI = round(rnorm(1000, 27, 28), 2)
+    BMI_EA = round(rnorm(1000, 21.5, 12), 2)
+    BMI_EA = round(rnorm(1000, 21.5, 12), 2)
+    Weight_Gain = (BMI - BMI_EA) * ((Height * 0.01)^2)
+    X <- data.frame(Height, BMI, BMI_EA, Weight_Gain)
     # wahre Betas festlegen
     betatrue<-c(beta1, beta2, beta3, beta4, beta5)
     # Zielvariable schätzen
@@ -151,6 +156,7 @@ GME_Sim_lrgr <- function(beta1, beta2, beta3, beta4, beta5, split_value) {
                        BMI_EA = round(data_S$BMI_EA, 2),
                        Weight_Gain = round(data_S$Weight_Gain, 2))
   # Teile Datensatz an bestimmter Stelle
+  # Teile Datensatz an bestimmter Stelle
   data_S_1 <- data_S[data_S$Height > split_value, ]
 
   # Modell schätzen
@@ -162,24 +168,24 @@ GME_Sim_lrgr <- function(beta1, beta2, beta3, beta4, beta5, split_value) {
   # einen BMI kleiner 21 hatten.
   # Die Gewichtszunahme ist zufällig.
   # kleinerer Datensatz, da der kombinierte Datensatz zu groß ist.
-  Height_I <- round(runif(50, split_value, 200))
-  BMI_I <- round(runif(20, 25, 35), 2)
-  BMI_EA_I = round(rnorm(20, 19, 21), 2)
-  Weight_Gain_I = round(rnorm(40, -15, 51), 2)
+  Height_I <- seq(min(data_S_1$Height), max(data_S_1$Height), by = 1)
+  BMI_I <- round(runif(10, 20, 25), 2)
+  BMI_EA_I = round(rnorm(10, 19, 21), 2)
+  Weight_Gain_I = round(rnorm(30, -15, 51), 2)
   data_I_S <- expand.grid(Height = Height_I, BMI = BMI_I, BMI_EA = BMI_EA_I, Weight_Gain = Weight_Gain_I)
   # GME
   Height_I_exp <- seq(min(Height_I), max(Height_I))
-  GME_I_S2 <- apply(drawsS1, 1, function(x) mean((1/length(Height_I))*(inv.logit(x[1] +
-                                                                                  x[2]*max(Height_I) +
+  GME_I_S2 <<- apply(drawsS1, 1, function(x) mean((1/length(Height_I_exp))*(inv.logit(x[1] +
+                                                                                  x[2]*max(Height_I_exp) +
                                                                                   x[3]*data_I_S$BMI + x[4]*data_I_S$BMI_EA +
                                                                                   x[5]*data_I_S$Weight_Gain) -
                                                                         inv.logit(x[1] +
-                                                                                    x[2]*min(Height_I) +
+                                                                                    x[2]*min(Height_I_exp) +
                                                                                     x[3]*data_I_S$BMI + x[4]*data_I_S$BMI_EA +
                                                                                     x[5]*data_I_S$Weight_Gain))))
   # Annahme 2
   Height_S <- seq(min(data_S_1$Height), max(data_S_1$Height), by = 1)
-  GME_II_S2 <- apply(drawsS1, 1, function(x) mean((1/length(Height_S))*(inv.logit(x[1] +
+  GME_II_S2 <<- apply(drawsS1, 1, function(x) mean((1/length(Height_S))*(inv.logit(x[1] +
                                                                                   x[2]* max(Height_S)+
                                                                                   x[3]*data_S_1$BMI + x[4]*data_S_1$BMI_EA +
                                                                                   x[5]*data_S_1$Weight_Gain) -
@@ -188,7 +194,7 @@ GME_Sim_lrgr <- function(beta1, beta2, beta3, beta4, beta5, split_value) {
                                                                                     x[3]*data_S_1$BMI + x[4]*data_S_1$BMI_EA +
                                                                                     x[5]*data_S_1$Weight_Gain))))
   # Annahme 3
-  GME_III_S2 <- apply(drawsS1, 1, function(x) mean(inv.logit.deriv(x[1] +
+  GME_III_S2 <<- apply(drawsS1, 1, function(x) mean(inv.logit.deriv(x[1] +
                                                                     x[2]*data_S_1$Height +
                                                                     x[3]*data_S_1$BMI + x[4]*data_S_1$BMI_EA +
                                                                     x[5]*data_S_1$Weight_Gain, x[2])))
@@ -204,16 +210,19 @@ GME_Sim_lrgr <- function(beta1, beta2, beta3, beta4, beta5, split_value) {
 
   all_A_S <- rbind(AI_S, AII_S, AIII_S)
 
-  all_A_S2_plot <- ggplot(all_A_S,aes(x = value, fill = Assumption)) +
+  all_A_S2_plot <<- ggplot(all_A_S,aes(x = value, fill = Assumption)) +
     geom_density(alpha=0.3) +   theme_bw() +
     stat_pointinterval(aes(color = Assumption, shape = Assumption),position = position_dodge(width = 3, preserve = "single"),point_interval = "mean_hdi",point_size=4)+
     scale_shape_manual(values = c(1, 15, 19)) +
     scale_fill_manual(values = c("deepskyblue4", "yellowgreen", "darkorchid1")) +
-    scale_color_manual(values = c("deepskyblue4" ,"yellowgreen", "darkorchid1")) + xlab(TeX("$\\Delta_j$"))
+    scale_color_manual(values = c("deepskyblue4" ,"yellowgreen", "darkorchid1")) +
+    xlab(TeX("$\\Delta_j$")) +
+    xlim(-0.005, 0.015)
   ggsave("exp_plot_S2.jpg", width = 7, height = 4)
   return(all_A_S2_plot)
 }
-GME_Sim_lrgr(-3, 0.05, -0.1, -0.15, 0.015, 1.65)
+set.seed(12226699)
+GME_Sim_lrgr(-9.5, 0.008, 0.3, -0.3, 0.3, 165)
 
 ################################################################################
 # GME berechnen auf dem Datensatz  für Height <= split_value und Modell auf Height > split_value
@@ -222,14 +231,16 @@ GME_Sim_smlr_lrgr <- function(beta1, beta2, beta3, beta4, beta5, split_value) {
   sim_list <- list()
   for(i in seq_along(1:100)) {
     # Regressoren simulieren
-    X <- data.frame(Height = round(rnorm(1000, 162.5, 100)),
-                    BMI = round(rnorm(1000, 27, 28), 2),
-                    BMI_EA = round(rnorm(1000, 21.5, 12), 2),
-                    Weight_Gain = round(rnorm(1000, 15, 90), 2) )
+    Height = round(rnorm(1000, 162.5, 100))
+    BMI = round(rnorm(1000, 27, 28), 2)
+    BMI_EA = round(rnorm(1000, 21.5, 12), 2)
+    BMI_EA = round(rnorm(1000, 21.5, 12), 2)
+    Weight_Gain = (BMI - BMI_EA) * ((Height * 0.01)^2)
+    X <- data.frame(Height, BMI, BMI_EA, Weight_Gain)
     # wahre Betas festlegen
     betatrue<-c(beta1, beta2, beta3, beta4, beta5)
     # Zielvariable schätzen
-    Y<-apply(X,1,function(x)rbinom(1,1,inv.logit(betatrue[1]+betatrue[2]*x[1]+betatrue[3]*x[2]+betatrue[4]*x[3] + betatrue[5]*x[4])))
+    Y <- apply(X,1,function(x)rbinom(1,1,inv.logit(betatrue[1]+betatrue[2]*x[1]+betatrue[3]*x[2]+betatrue[4]*x[3] + betatrue[5]*x[4])))
     # Datensatz bilden
     sim_list[[i]]<-cbind(Y,X)
   }
@@ -253,24 +264,24 @@ GME_Sim_smlr_lrgr <- function(beta1, beta2, beta3, beta4, beta5, split_value) {
   # einen BMI kleiner 21 hatten.
   # Die Gewichtszunahme ist zufällig.
   # kleinerer Datensatz, da der kombinierte Datensatz zu groß ist.
-  Height_I <- round(runif(50, 134,split_value))
-  BMI_I <- round(runif(20, 25, 35), 2)
-  BMI_EA_I = round(rnorm(20, 19, 21), 2)
-  Weight_Gain_I = round(rnorm(40, -15, 51), 2)
+  Height_I <- seq(min(data_S_1$Height), max(data_S_1$Height), by = 1)
+  BMI_I <- round(runif(10, 20, 25), 2)
+  BMI_EA_I = round(rnorm(10, 19, 21), 2)
+  Weight_Gain_I = round(rnorm(30, -15, 51), 2)
   data_I_S <- expand.grid(Height = Height_I, BMI = BMI_I, BMI_EA = BMI_EA_I, Weight_Gain = Weight_Gain_I)
   # GME
   Height_I_exp <- seq(min(Height_I), max(Height_I))
-  GME_I_S3 <- apply(drawsS, 1, function(x) mean((1/length(Height_I))*(inv.logit(x[1] +
-                                                                                  x[2]*max(Height_I) +
+  GME_I_S3 <<- apply(drawsS, 1, function(x) mean((1/length(Height_I_exp))*(inv.logit(x[1] +
+                                                                                  x[2]*max(Height_I_exp) +
                                                                                   x[3]*data_I_S$BMI + x[4]*data_I_S$BMI_EA +
                                                                                   x[5]*data_I_S$Weight_Gain) -
                                                                         inv.logit(x[1] +
-                                                                                    x[2]*min(Height_I) +
+                                                                                    x[2]*min(Height_I_exp) +
                                                                                     x[3]*data_I_S$BMI + x[4]*data_I_S$BMI_EA +
                                                                                     x[5]*data_I_S$Weight_Gain))))
   # Annahme 2
   Height_S <- seq(min(data_S_1$Height), max(data_S_1$Height))
-  GME_II_S3 <- apply(drawsS, 1, function(x) mean((1/length(Height_S))*(inv.logit(x[1] +
+  GME_II_S3 <<- apply(drawsS, 1, function(x) mean((1/length(Height_S))*(inv.logit(x[1] +
                                                                                   x[2]* max(Height_S)+
                                                                                   x[3]*data_S_1$BMI + x[4]*data_S_1$BMI_EA +
                                                                                   x[5]*data_S_1$Weight_Gain) -
@@ -279,7 +290,7 @@ GME_Sim_smlr_lrgr <- function(beta1, beta2, beta3, beta4, beta5, split_value) {
                                                                                     x[3]*data_S_1$BMI + x[4]*data_S_1$BMI_EA +
                                                                                     x[5]*data_S_1$Weight_Gain))))
   # Annahme 3
-  GME_III_S3 <- apply(drawsS, 1, function(x) mean(inv.logit.deriv(x[1] +
+  GME_III_S3 <<- apply(drawsS, 1, function(x) mean(inv.logit.deriv(x[1] +
                                                                     x[2]*data_S_1$Height +
                                                                     x[3]*data_S_1$BMI + x[4]*data_S_1$BMI_EA +
                                                                     x[5]*data_S_1$Weight_Gain, x[2])))
@@ -295,16 +306,19 @@ GME_Sim_smlr_lrgr <- function(beta1, beta2, beta3, beta4, beta5, split_value) {
 
   all_A_S <- rbind(AI_S, AII_S, AIII_S)
 
-  all_A_S3_plot <- ggplot(all_A_S,aes(x = value, fill = Assumption)) +
+  all_A_S3_plot <<- ggplot(all_A_S,aes(x = value, fill = Assumption)) +
     geom_density(alpha=0.3) +   theme_bw() +
     stat_pointinterval(aes(color = Assumption, shape = Assumption),position = position_dodge(width = 3, preserve = "single"),point_interval = "mean_hdi",point_size=4)+
     scale_shape_manual(values = c(1, 15, 19)) +
     scale_fill_manual(values = c("deepskyblue4", "yellowgreen", "darkorchid1")) +
-    scale_color_manual(values = c("deepskyblue4" ,"yellowgreen", "darkorchid1")) + xlab(TeX("$\\Delta_j$"))
+    scale_color_manual(values = c("deepskyblue4" ,"yellowgreen", "darkorchid1")) +
+    xlab(TeX("$\\Delta_j$")) +
+    xlim(-0.005, 0.015)
   ggsave("exp_plot_S3.jpg", width = 7, height = 4)
   return(all_A_S3_plot)
 }
-GME_Sim_smlr_lrgr(-3, 0.05, -0.1, -0.15, 0.015, 165)
+set.seed(12226699)
+GME_Sim_smlr_lrgr(-9.5, 0.008, 0.3, -0.3, 0.3, 165)
 
 ################################################################################
 # GME berechnen auf dem Datensatz  für Height > split_value und Modell auf Height <= split_value
@@ -313,14 +327,16 @@ GME_Sim_lrgr_smlr <- function(beta1, beta2, beta3, beta4, beta5, split_value) {
   sim_list <- list()
   for(i in seq_along(1:100)) {
     # Regressoren simulieren
-    X <- data.frame(Height = round(rnorm(1000, 162.5, 100)),
-                    BMI = round(rnorm(1000, 27, 28), 2),
-                    BMI_EA = round(rnorm(1000, 21.5, 12), 2),
-                    Weight_Gain = round(rnorm(1000, 15, 90), 2) )
+    Height = round(rnorm(1000, 162.5, 100))
+    BMI = round(rnorm(1000, 27, 28), 2)
+    BMI_EA = round(rnorm(1000, 21.5, 12), 2)
+    BMI_EA = round(rnorm(1000, 21.5, 12), 2)
+    Weight_Gain = (BMI - BMI_EA) * ((Height * 0.01)^2)
+    X <- data.frame(Height, BMI, BMI_EA, Weight_Gain)
     # wahre Betas festlegen
     betatrue<-c(beta1, beta2, beta3, beta4, beta5)
     # Zielvariable schätzen
-    Y<-apply(X,1,function(x)rbinom(1,1,inv.logit(betatrue[1]+betatrue[2]*x[1]+betatrue[3]*x[2]+betatrue[4]*x[3] + betatrue[5]*x[4])))
+    Y <- apply(X,1,function(x)rbinom(1,1,inv.logit(betatrue[1]+betatrue[2]*x[1]+betatrue[3]*x[2]+betatrue[4]*x[3] + betatrue[5]*x[4])))
     # Datensatz bilden
     sim_list[[i]]<-cbind(Y,X)
   }
@@ -344,24 +360,24 @@ GME_Sim_lrgr_smlr <- function(beta1, beta2, beta3, beta4, beta5, split_value) {
   # einen BMI kleiner 21 hatten.
   # Die Gewichtszunahme ist zufällig.
   # kleinerer Datensatz, da der kombinierte Datensatz zu groß ist.
-  Height_I <- round(runif(50, split_value, 200))
-  BMI_I <- round(runif(20, 25, 35), 2)
-  BMI_EA_I = round(rnorm(20, 19, 21), 2)
-  Weight_Gain_I = round(rnorm(40, -15, 51), 2)
+  Height_I <- seq(min(data_S_1$Height), max(data_S_1$Height), by = 1)
+  BMI_I <- round(runif(10, 20, 25), 2)
+  BMI_EA_I = round(rnorm(10, 19, 21), 2)
+  Weight_Gain_I = round(rnorm(30, -15, 51), 2)
   data_I_S <- expand.grid(Height = Height_I, BMI = BMI_I, BMI_EA = BMI_EA_I, Weight_Gain = Weight_Gain_I)
   # GME
   Height_I_exp <- seq(min(Height_I), max(Height_I))
-  GME_I_S4 <- apply(drawsS, 1, function(x) mean((1/length(Height_I))*(inv.logit(x[1] +
-                                                                                  x[2]*max(Height_I) +
+  GME_I_S4 <<- apply(drawsS, 1, function(x) mean((1/length(Height_I_exp))*(inv.logit(x[1] +
+                                                                                  x[2]*max(Height_I_exp) +
                                                                                   x[3]*data_I_S$BMI + x[4]*data_I_S$BMI_EA +
                                                                                   x[5]*data_I_S$Weight_Gain) -
                                                                         inv.logit(x[1] +
-                                                                                    x[2]*min(Height_I) +
+                                                                                    x[2]*min(Height_I_exp) +
                                                                                     x[3]*data_I_S$BMI + x[4]*data_I_S$BMI_EA +
                                                                                     x[5]*data_I_S$Weight_Gain))))
   # Annahme 2
   Height_S <- seq(min(data_S_1$Height), max(data_S_1$Height))
-  GME_II_S4 <- apply(drawsS, 1, function(x) mean((1/length(Height_S))*(inv.logit(x[1] +
+  GME_II_S4 <<- apply(drawsS, 1, function(x) mean((1/length(Height_S))*(inv.logit(x[1] +
                                                                                   x[2]* max(Height_S)+
                                                                                   x[3]*data_S_1$BMI + x[4]*data_S_1$BMI_EA +
                                                                                   x[5]*data_S_1$Weight_Gain) -
@@ -370,7 +386,7 @@ GME_Sim_lrgr_smlr <- function(beta1, beta2, beta3, beta4, beta5, split_value) {
                                                                                     x[3]*data_S_1$BMI + x[4]*data_S_1$BMI_EA +
                                                                                     x[5]*data_S_1$Weight_Gain))))
   # Annahme 3
-  GME_III_S4 <- apply(drawsS, 1, function(x) mean(inv.logit.deriv(x[1] +
+  GME_III_S4 <<- apply(drawsS, 1, function(x) mean(inv.logit.deriv(x[1] +
                                                                     x[2]*data_S_1$Height +
                                                                     x[3]*data_S_1$BMI + x[4]*data_S_1$BMI_EA +
                                                                     x[5]*data_S_1$Weight_Gain, x[2])))
@@ -386,13 +402,23 @@ GME_Sim_lrgr_smlr <- function(beta1, beta2, beta3, beta4, beta5, split_value) {
 
   all_A_S <- rbind(AI_S, AII_S, AIII_S)
 
-  all_A_S4_plot <- ggplot(all_A_S,aes(x = value, fill = Assumption)) +
+  all_A_S4_plot <<- ggplot(all_A_S,aes(x = value, fill = Assumption)) +
     geom_density(alpha=0.3) +   theme_bw() +
     stat_pointinterval(aes(color = Assumption, shape = Assumption),position = position_dodge(width = 3, preserve = "single"),point_interval = "mean_hdi",point_size=4)+
     scale_shape_manual(values = c(1, 15, 19)) +
     scale_fill_manual(values = c("deepskyblue4", "yellowgreen", "darkorchid1")) +
-    scale_color_manual(values = c("deepskyblue4" ,"yellowgreen", "darkorchid1")) + xlab(TeX("$\\Delta_j$"))
+    scale_color_manual(values = c("deepskyblue4" ,"yellowgreen", "darkorchid1")) +
+    xlab(TeX("$\\Delta_j$")) +
+    xlim(-0.005, 0.015)
   ggsave("exp_plot_S4.jpg", width = 7, height = 4)
   return(all_A_S4_plot)
 }
-GME_Sim_lrgr_smlr(-3, 0.05, -0.1, -0.15, 0.015, 165)
+set.seed(12226699)
+GME_Sim_lrgr_smlr(-9.5, 0.008, 0.3, -0.3, 0.3, 165)
+
+################################################################################
+all_A_plot <- ggarrange(all_A_S_plot, all_A_S2_plot, all_A_S3_plot, all_A_S4_plot,
+                        common.legend = TRUE, legend = "bottom", labels = "auto")
+ggsave("GME_plot_all.jpg", width = 10.5, height = 6)
+
+
