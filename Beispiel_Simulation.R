@@ -68,7 +68,7 @@ GME_Sim_smlr <- function(beta1, beta2, beta3, beta4, beta5, split_value) {
   drawsS1 <- rmvnorm(1000, modelS1$coefficients, vcov(modelS1))
 
   # Annahme 1
-  # Subgruppe: Frauen, die einen BMI größer 25 haben, und im frühen Erwachsenenalter
+  # Subgruppe: Frauen, die einen BMI zwischen 20 und 25 haben, und im frühen Erwachsenenalter
   # einen BMI kleiner 21 hatten.
   # Die Gewichtszunahme ist zufällig.
   # kleinerer Datensatz, da der kombinierte Datensatz zu groß ist.

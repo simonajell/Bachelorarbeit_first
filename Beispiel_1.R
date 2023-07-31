@@ -102,7 +102,7 @@ dtII_1_exp <- data.frame(x = chol, mean = apply(AgePredII_1_exp, 1, mean),
                          Assumption = "Annahme 2"
 )
 
-##########
+#################
 # Assumption 3 auf Cholesterin
 # GME schätzen
 AgePredIII_1 <- apply(draws1, 1, function(x) mean(inv.logit.deriv(x[1] +
