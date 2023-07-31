@@ -11,6 +11,9 @@ library(plyr)
 library(ggpubr)
 library(mvtnorm)
 
+# Seed setzen
+set.seed(12226699)
+
 # Daten einlesen
 data(HeartDisease.target,HeartDisease.cont,HeartDisease.cat)
 HeartDisease<-cbind(HeartDisease.cont,HeartDisease.cat,HeartDisease.target)
@@ -24,9 +27,26 @@ levels(HeartDisease$cp_cat)<-list(asymptomatic=4, typical_angina=1,
 # Ruhe-EKG, ST-Steigung und  zu Faktor umwandeln
 HeartDisease$restecg<-as.factor(HeartDisease$restecg)
 HeartDisease$slope<-as.factor(HeartDisease$slope)
-
+HeartDisease_dummy <- dummy_cols(HeartDisease)
 
 attach(HeartDisease)
+
+# Helper Funktionen
+inv.logit<-function(x){ #this function computes the inverse logit of a value x
+  res<-numeric(length(x))
+  for(i in 1:length(x)){
+    res[i]<-1/(1+exp(-x[i]))
+  }
+  return(res)
+}
+inv.logit.deriv<-function(x,beta){ #this function computes the derivative of the inverse logit of a value x
+  res<-numeric(length(x))
+  for(i in 1:length(x)){
+    res[i]<-(beta*exp(x[i]))/(1+exp(x[i]))^2
+  }
+  return(res)
+}
+
 
 # Variablen aus anderen Kategorien: Elektrokardiographie bezogene Ergebnisse und Symptome
 # Einfluss von höchstem Puls, Ruhe-EKG, ST-Senkung, Steigung des ST Abschnitts,
@@ -36,11 +56,14 @@ model4.2 <- glm(target ~ cp + restecg + thalach + exang + oldpeak + slope,
                 family=binomial, data = HeartDisease)
 summary(model4.2)
 draws_4.2 <- rmvnorm(1000, model4.2$coefficients, vcov(model4.2))
-HD_df_4 <- data.frame(HeartDisease[,c("thalach","restecg","oldpeak","slope",
-                                      "cp", "exang", "target")])
+HD_df_4 <- data.frame(HeartDisease_dummy[,c("thalach","restecg_0", "restecg_1", "restecg_2",
+                                            "oldpeak","slope_1", "slope_2", "slope_3",
+                                            "cp_1", "cp_2", "cp_3", "cp_4",
+                                            "exang", "target")])
 
-################
-#Assumption 1 auf Brustschmerz für zufälligen oldpeak und slope = downsloping, EKG mit Hypertrophie,
+# Annahme 1
+################################################################################
+# Annahme 1 auf Brustschmerz für zufälligen oldpeak und slope = downsloping, EKG mit Hypertrophie,
 # zufälligem höchstem Ruhepuls und zufälligem Aktivitätsschmerz
 exang <- round(runif(25, min = 0, max = 1))
 oldpeak <- round(runif(50, min = 0, max = 6.2), digits = 1)
@@ -102,9 +125,10 @@ AI_4.2_cp<-merge(AI_4.2_cp,
                       dplyr::summarize_at("value",mean) %>% dplyr::rename(mean=value),
                     by="Brust_Schmerz")
 AI_4.2_cp <- data.frame(AI_4.2_cp, Assumption = "Annahme 1")
-
-#########################
-# Assumption 2
+################################################################################
+# Annahme 2
+################################################################################
+# Annahme 2
 # Adjusted Predictions schätzen
 intval_II_4.2<-function(betas,regs,deriv=NULL){
   betas <- as.numeric(betas)
@@ -153,8 +177,10 @@ AII_4.2_cp<-merge(AII_4.2_cp,
                      by="Brust_Schmerz")
 AII_4.2_cp <- data.frame(AII_4.2_cp, Assumption = "Annahme 2")
 
-#######################
-# Assumption 3
+################################################################################
+# Annahme 3
+################################################################################
+# Annahme 3
 # Adjusted Predictions schätzen
 mittlerer_Ewert_III_4.2 <- list()
 mittlerer_Ewert_III_4.2$cp_1<-apply(draws_4.2,1,function(x){sum(intval_II_4.2(x,dplyr::select(HD_df_4[which(HD_df_4$cp_1==1),],-"cp_1")))/length(which(HD_df_4$cp_1==1))})
@@ -190,7 +216,9 @@ AIII_4.2_cp<-merge(AIII_4.2_cp,
                       by="Brust_Schmerz")
 AIII_4.2_cp <- data.frame(AIII_4.2_cp, Assumption = "Annahme 3")
 
-###########
+################################################################################
+# Graphen erzeugen
+################################################################################
 # alle GMEs vergleichen
 all_A_4.2 <- rbind(AI_4.2_cp, AII_4.2_cp, AIII_4.2_cp)
 all_A_4.2$Brust_Schmerz <- factor(all_A_4.2$Brust_Schmerz, labels = c("Atypischer Brustschmerz; n = 50",

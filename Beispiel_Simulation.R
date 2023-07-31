@@ -7,7 +7,7 @@ library(tidybayes)
 library(latex2exp)
 library(ggpubr)
 
-# Analyse basiert auf der Studie von:
+# Analyse basierend auf der Studie von:
   # Body size and weight change over adulthood and risk of breast cancer by menopausal
   # and hormone receptor status: a pooled analysis of 20 prospective cohort studies
 # Variablen: Größe, Gewicht, BMI, BMI im frühen Erwachsenenalter (18-20 J.),

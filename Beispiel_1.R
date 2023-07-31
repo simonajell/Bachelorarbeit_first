@@ -11,6 +11,9 @@ library(plyr)
 library(ggpubr)
 library(mvtnorm)
 
+# Seed setzen
+set.seed(12226699)
+
 # Daten einlesen
 data(HeartDisease.target,HeartDisease.cont,HeartDisease.cat)
 HeartDisease<-cbind(HeartDisease.cont,HeartDisease.cat,HeartDisease.target)
@@ -22,6 +25,21 @@ levels(HeartDisease$cp_cat)<-list(asymptomatic=4, typical_angina=1,
                                   atypical_angina=2, non_anginal_pain=3)
 attach(HeartDisease)
 
+# Helper Funktionen
+inv.logit<-function(x){ #this function computes the inverse logit of a value x
+  res<-numeric(length(x))
+  for(i in 1:length(x)){
+    res[i]<-1/(1+exp(-x[i]))
+  }
+  return(res)
+}
+inv.logit.deriv<-function(x,beta){ #this function computes the derivative of the inverse logit of a value x
+  res<-numeric(length(x))
+  for(i in 1:length(x)){
+    res[i]<-(beta*exp(x[i]))/(1+exp(x[i]))^2
+  }
+  return(res)
+}
 
 # Modell schätzen
 # Variablen, die Angaben zu physischen Eigenschaften und Allgemeinzustand geben, welche in Zusammenhang mit einer Herzkrankheit stehen
@@ -31,8 +49,9 @@ model1<-glm(target ~ chol + sex + trestbps +
 summary(model1)
 draws1 <- rmvnorm(1000, model1$coefficients, vcov(model1))
 
-################
-# Assumption 1 auf Cholesterin für Männer allen Alters mit zufälligem Ruhe Blutdruck und Blutzucker
+# Annahme 1
+################################################################################
+# Annahme 1 auf Cholesterin für Männer allen Alters mit zufälligem Ruhe Blutdruck und Blutzucker
 # Datensatz mit allen Variablen kombiniert
 age_I_1 <- round(runif(50, min = 29, max = 77))
 trestbps_I_1 <- round(runif(50, min = 94, max = 200))
@@ -48,7 +67,6 @@ AgePredI_1 <- apply(draws1, 1, function(x) mean((1/438)*(inv.logit(x[1] +
                                                                         x[2]*126 +
                                                                         x[3]*dt_I_1_comb$sex + x[4]*dt_I_1_comb$trestbps +
                                                                         x[5]*dt_I_1_comb$age + x[6]*dt_I_1_comb$fbs))))
-
 AgePredI_1_mean <- mean(AgePredI_1)
 
 # Adjusted Predictions schätzen
@@ -71,9 +89,10 @@ dtI_1_exp <- data.frame(x = chol, mean = apply(AgePredI_1_exp, 1, mean),
                         ymax=predict(loess(apply(AgePredI_1_exp,1,function(x)HDInterval::hdi(x,credMass = 0.95)[2]) ~ chol),data.frame(chol = chol)),
                         Assumption = "Annahme 1"
 )
-
-#################
-# Assumption 2 auf Cholesterin
+################################################################################
+# Annahme 2
+################################################################################
+# Annahme 2 auf Cholesterin
 # Intervall von Cholesterin
 int_leng_1 <- max(HeartDisease$chol) - min(HeartDisease$chol)
 # GME schätzen
@@ -101,9 +120,10 @@ dtII_1_exp <- data.frame(x = chol, mean = apply(AgePredII_1_exp, 1, mean),
                          ymax=predict(loess(apply(AgePredII_1_exp,1,function(x)HDInterval::hdi(x,credMass = 0.95)[2]) ~ chol),data.frame(chol = chol)),
                          Assumption = "Annahme 2"
 )
-
-#################
-# Assumption 3 auf Cholesterin
+################################################################################
+# Annahme 3
+################################################################################
+# Annahme 3 auf Cholesterin
 # GME schätzen
 AgePredIII_1 <- apply(draws1, 1, function(x) mean(inv.logit.deriv(x[1] +
                                                                     x[2]*HeartDisease$chol +
@@ -125,8 +145,9 @@ dtIII_1_exp <- data.frame(x = chol, mean = apply(AgePredIII_1_exp, 1, mean),
                           ymax=predict(loess(apply(AgePredIII_1_exp,1,function(x)HDInterval::hdi(x,credMass = 0.95)[2])~chol),data.frame(chol=chol)),
                           Assumption = "Annahme 3"
 )
-
-############
+################################################################################
+# Graphen erzeugen
+################################################################################
 # GMEs vergleichen
 AI_1 <- data.frame(AgePredI_1, Assumption = "Annahme 1", mean = mean(AgePredI_1))
 names(AI_1)<-c("value", "Assumption", "mean")
